@@ -11,15 +11,15 @@ const roboto = Roboto({
 })
 
 export const metadata: Metadata = {
-  title: 'Saffron & Cedar | Floor & Reservations',
+  title: 'Saffron & Cedar | Guest & Floor Manager',
   description:
-    'Touch-first restaurant reservations and live floor management for Saffron & Cedar, Beirut.',
+    'Manage guest visit tiers, occasion tags, reservations, and an editable dining-room floor plan for Saffron & Cedar.'
 }
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fef7ff' },
-    { media: '(prefers-color-scheme: dark)', color: '#141218' },
+    { media: '(prefers-color-scheme: light)', color: '#111312' },
+    { media: '(prefers-color-scheme: dark)', color: '#111312' },
   ],
 }
 
