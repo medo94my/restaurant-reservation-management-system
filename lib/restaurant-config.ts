@@ -1,10 +1,9 @@
 export type TableShape = 'round' | 'square' | 'rectangle' | 'oval' | 'long'
+export type CouchShape = 'loveseat' | 'sofa'
 export type TableStatus = 'available' | 'seated' | 'prep' | 'blocked'
 
-export type Unit = {
+type FloorItemBase = {
   id: string
-  kind: 'Table'
-  tableType: TableShape
   capacity: number
   status: TableStatus
   x: number
@@ -18,12 +17,22 @@ export type Unit = {
   archived?: boolean
 }
 
+export type TableUnit = FloorItemBase & { kind: 'Table'; tableType: TableShape }
+export type CouchUnit = FloorItemBase & { kind: 'Couch'; couchType: CouchShape }
+export type RoomUnit = FloorItemBase & {
+  kind: 'Room'
+  roomWidth: number
+  roomHeight: number
+  tableType: TableShape
+}
+export type Unit = TableUnit | CouchUnit | RoomUnit
+
 export type Booking = {
   id: number
   name: string
   phone: string
   pax: number
-  kind: 'Table'
+  kind: Unit['kind']
   tableType: TableShape | 'any'
   time: string
   note: string
@@ -56,7 +65,7 @@ export type RestaurantConfig = {
   visitTiers: VisitTier[]
   occasionTags: OccasionTag[]
   customers: CustomerProfile[]
-  tables: Unit[]
+  floorItems: Unit[]
 }
 
 export const RESTAURANT_MANAGER_USER_ID = 'saffron-cedar-manager'
@@ -85,30 +94,36 @@ export const DEFAULT_CUSTOMERS: CustomerProfile[] = [
 const tableShapes: TableShape[] = ['round', 'square', 'rectangle', 'oval', 'long']
 const tableCapacities = [2, 4, 4, 6, 8]
 
-export const DEFAULT_TABLES: Unit[] = Array.from({ length: 16 }, (_, index) => {
-  const row = Math.floor(index / 4)
-  const column = index % 4
-  const id = `Table ${index + 1}`
+const defaultTables: TableUnit[] = Array.from({ length: 12 }, (_, index) => {
+  const row = Math.floor(index / 3)
+  const column = index % 3
   const status: TableStatus = index === 4 ? 'prep' : [0, 8].includes(index) ? 'seated' : 'available'
   const guest = index === 0 ? 'Rami Mansour' : index === 4 ? 'Nadia Khoury' : index === 8 ? 'Omar & friends' : undefined
 
   return {
-    id,
+    id: `Table ${index + 1}`,
     kind: 'Table',
     tableType: tableShapes[index % tableShapes.length],
     capacity: tableCapacities[index % tableCapacities.length],
     status,
-    x: 125 + column * 250,
-    y: 95 + row * 135,
+    x: 135 + column * 220,
+    y: 105 + row * 125,
     rotation: 0,
     ...(guest ? { guest, pax: index === 0 ? 2 : index === 4 ? 8 : 5, time: index === 0 ? '6:50 PM' : index === 4 ? '8:40 PM' : '7:15 PM' } : {}),
     ...(index === 4 ? { note: 'Regular guest' } : {}),
   }
 })
 
+export const DEFAULT_FLOOR_ITEMS: Unit[] = [
+  ...defaultTables,
+  { id: 'Couch 1', kind: 'Couch', couchType: 'loveseat', capacity: 2, status: 'available', x: 805, y: 115, rotation: 0 },
+  { id: 'Couch 2', kind: 'Couch', couchType: 'sofa', capacity: 3, status: 'available', x: 805, y: 280, rotation: 0 },
+  { id: 'Room 1', kind: 'Room', roomWidth: 190, roomHeight: 140, tableType: 'round', capacity: 4, status: 'available', x: 815, y: 475, rotation: 0 },
+]
+
 export const DEFAULT_RESTAURANT_CONFIG: RestaurantConfig = {
   visitTiers: DEFAULT_VISIT_TIERS,
   occasionTags: DEFAULT_OCCASION_TAGS,
   customers: DEFAULT_CUSTOMERS,
-  tables: DEFAULT_TABLES,
+  floorItems: DEFAULT_FLOOR_ITEMS,
 }

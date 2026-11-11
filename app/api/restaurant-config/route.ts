@@ -3,22 +3,24 @@ import { NextResponse } from 'next/server'
 import { db, restaurantWorkspaceConfig } from '@/lib/db'
 import { getManagerSession } from '@/lib/manager-session'
 import { RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
-import type { RestaurantConfig, TableShape, TableStatus } from '@/lib/restaurant-config'
+import { DEFAULT_FLOOR_ITEMS } from '@/lib/restaurant-config'
+import type { CouchShape, RestaurantConfig, TableShape, TableStatus, Unit } from '@/lib/restaurant-config'
 
 export const runtime = 'nodejs'
 
 const tableShapes: TableShape[] = ['round', 'square', 'rectangle', 'oval', 'long']
+const couchShapes: CouchShape[] = ['loveseat', 'sofa']
 const tableStatuses: TableStatus[] = ['available', 'seated', 'prep', 'blocked']
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 const isShortString = (value: unknown, max = 160): value is string => typeof value === 'string' && value.trim().length > 0 && value.length <= max
 
 function isRestaurantConfig(value: unknown): value is RestaurantConfig {
   if (!isRecord(value)) return false
-  const { visitTiers, occasionTags, customers, tables } = value
+  const { visitTiers, occasionTags, customers, floorItems } = value
   if (!Array.isArray(visitTiers) || visitTiers.length < 1 || visitTiers.length > 12) return false
   if (!Array.isArray(occasionTags) || occasionTags.length > 40) return false
   if (!Array.isArray(customers) || customers.length > 5000) return false
-  if (!Array.isArray(tables) || tables.length > 250) return false
+  if (!Array.isArray(floorItems) || floorItems.length > 250) return false
 
   const validTiers = visitTiers.every((tier) => isRecord(tier)
     && isShortString(tier.id, 64)
@@ -42,30 +44,40 @@ function isRestaurantConfig(value: unknown): value is RestaurantConfig {
     && Array.isArray(customer.occasionTags)
     && customer.occasionTags.length <= 40
     && customer.occasionTags.every((tagId) => typeof tagId === 'string' && tagId.length <= 64))
-  const validTables = tables.every((table) => isRecord(table)
-    && isShortString(table.id, 80)
-    && table.kind === 'Table'
-    && typeof table.tableType === 'string'
-    && tableShapes.includes(table.tableType as TableShape)
-    && Number.isInteger(table.capacity)
-    && Number(table.capacity) >= 1
-    && Number(table.capacity) <= 30
-    && typeof table.status === 'string'
-    && tableStatuses.includes(table.status as TableStatus)
-    && Number.isFinite(table.x)
-    && Number(table.x) >= 55
-    && Number(table.x) <= 945
-    && Number.isFinite(table.y)
-    && Number(table.y) >= 55
-    && Number(table.y) <= 545
-    && Number.isFinite(table.rotation)
-    && Number.isInteger(table.rotation)
-    && (table.guest === undefined || typeof table.guest === 'string' && table.guest.length <= 100)
-    && (table.note === undefined || typeof table.note === 'string' && table.note.length <= 500)
-    && (table.archived === undefined || typeof table.archived === 'boolean'))
+  const validFloorItems = floorItems.every((item) => {
+    if (!isRecord(item)
+      || !isShortString(item.id, 80)
+      || !Number.isInteger(item.capacity)
+      || Number(item.capacity) < 1
+      || Number(item.capacity) > 30
+      || typeof item.status !== 'string'
+      || !tableStatuses.includes(item.status as TableStatus)
+      || !Number.isFinite(item.x)
+      || Number(item.x) < 55
+      || Number(item.x) > 945
+      || !Number.isFinite(item.y)
+      || Number(item.y) < 55
+      || Number(item.y) > 545
+      || !Number.isInteger(item.rotation)
+      || (item.guest !== undefined && (typeof item.guest !== 'string' || item.guest.length > 100))
+      || (item.note !== undefined && (typeof item.note !== 'string' || item.note.length > 500))
+      || (item.archived !== undefined && typeof item.archived !== 'boolean')) return false
 
-  const tableIds = new Set(tables.filter(isRecord).map((table) => typeof table.id === 'string' ? table.id.trim().toLowerCase() : ''))
-  return validTiers && validTags && validCustomers && validTables && tableIds.size === tables.length && !tableIds.has('')
+    if (item.kind === 'Table') return typeof item.tableType === 'string' && tableShapes.includes(item.tableType as TableShape)
+    if (item.kind === 'Couch') return typeof item.couchType === 'string' && couchShapes.includes(item.couchType as CouchShape)
+    if (item.kind === 'Room') return typeof item.tableType === 'string'
+      && tableShapes.includes(item.tableType as TableShape)
+      && Number.isInteger(item.roomWidth)
+      && Number(item.roomWidth) >= 150
+      && Number(item.roomWidth) <= 320
+      && Number.isInteger(item.roomHeight)
+      && Number(item.roomHeight) >= 120
+      && Number(item.roomHeight) <= 240
+    return false
+  })
+
+  const itemIds = new Set(floorItems.filter(isRecord).map((item) => typeof item.id === 'string' ? item.id.trim().toLowerCase() : ''))
+  return validTiers && validTags && validCustomers && validFloorItems && itemIds.size === floorItems.length && !itemIds.has('')
 }
 
 export async function GET() {
@@ -77,9 +89,27 @@ export async function GET() {
       .limit(1)
 
     const session = await getManagerSession()
-    const config = row?.config
+    const storedConfig = row?.config as (RestaurantConfig & { tables?: Unit[] }) | undefined
+    const legacyItems = storedConfig?.tables ?? []
+    const hasLegacyItems = Array.isArray(storedConfig?.tables)
+    const legacyStarterLayout = legacyItems.length === 16 && legacyItems.every((item, index) => {
+      const status = index === 4 ? 'prep' : [0, 8].includes(index) ? 'seated' : 'available'
+      return item.kind === 'Table'
+        && item.id === `Table ${index + 1}`
+        && item.tableType === tableShapes[index % tableShapes.length]
+        && item.capacity === [2, 4, 4, 6, 8][index % 5]
+        && item.x === 125 + (index % 4) * 250
+        && item.y === 95 + Math.floor(index / 4) * 135
+        && item.rotation === 0
+        && item.status === status
+        && !item.archived
+    })
+    const config = storedConfig ? {
+      ...storedConfig,
+      floorItems: storedConfig.floorItems ?? (hasLegacyItems ? (legacyStarterLayout ? DEFAULT_FLOOR_ITEMS : legacyItems) : DEFAULT_FLOOR_ITEMS),
+    } : null
     const visibleConfig = !config ? null : session ? config : {
-      tables: config.tables,
+      floorItems: config.floorItems,
       visitTiers: config.visitTiers,
       occasionTags: config.occasionTags,
     }
