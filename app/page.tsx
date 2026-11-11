@@ -29,7 +29,8 @@ export default function HomePage() {
   const [screen, setScreen] = useState<'login' | 'service'>('login'), [pinFromLogin, setPinFromLogin] = useState(false), [manager, setManager] = useState(false), [pinOpen, setPinOpen] = useState(false), [pin, setPin] = useState(''), [pinError, setPinError] = useState(false), [modal, setModal] = useState<'booking' | 'complete' | 'merge' | null>(null), [selected, setSelected] = useState<Unit | null>(null), [bookingUnit, setBookingUnit] = useState<string | null>(null), [bill, setBill] = useState(''), [now, setNow] = useState<Date | null>(null), [query, setQuery] = useState(''), [guestName, setGuestName] = useState(''), [party, setParty] = useState(2), [kind, setKind] = useState<Unit['kind']>('Table'), [bookTime, setBookTime] = useState('20:00'), [note, setNote] = useState(''), [activeTab, setActiveTab] = useState<'floor' | 'bookings'>('floor'), [managerTab, setManagerTab] = useState<'overview' | 'layout' | 'reservations'>('overview'), [stats, setStats] = useState(false), [mergeSet, setMergeSet] = useState<string[]>([]), [combined, setCombined] = useState(true)
   useEffect(() => { const updateClock = () => setNow(new Date()); updateClock(); const timer = window.setInterval(updateClock, 30_000); return () => window.clearInterval(timer) }, [])
   const match = guestBook[query.replace(/\D/g, '')]
-  const currentMinutes = now ? now.getHours() * 60 + now.getMinutes() : 0
+  const currentTime = now ?? new Date(0)
+  const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes()
   const minutesUntil = (time: string) => ((Number(time.split(':')[0]) * 60 + Number(time.split(':')[1]) - currentMinutes) + 1440) % 1440
   const dueBookings = bookings.map(b => ({ ...b, mins: minutesUntil(b.time) })).filter(b => b.mins >= 15 && b.mins <= 30 && !b.arrived)
   const sections: Unit['kind'][] = ['Room', 'Couch', 'Table']
