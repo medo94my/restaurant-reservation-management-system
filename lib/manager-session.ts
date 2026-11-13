@@ -41,8 +41,8 @@ export function createManagerSessionToken() {
 export function managerCookieOptions(maxAge = SESSION_TTL_SECONDS) {
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+  secure: true,
+  sameSite: process.env.NODE_ENV === 'development' ? 'none' as const : 'strict' as const,
     path: '/',
     maxAge,
   }

@@ -13,7 +13,7 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: 'Saffron & Cedar | Guest & Floor Manager',
   description:
-    'Manage guest visit tiers, occasion tags, reservations, and an editable dining-room floor plan for Saffron & Cedar.'
+    'Secure Saffron & Cedar staff workspace for reservations, floor service, guest history, and manager-authorized staff accounts.'
 }
 
 export const viewport: Viewport = {
