@@ -42,6 +42,7 @@ export const auth = betterAuth({
   trustedOrigins: [...new Set(isDevelopment ? developmentOrigins : productionOrigins)],
   emailAndPassword: {
     enabled: true,
+    autoSignIn: true,
     minPasswordLength: 12,
     requireEmailVerification: false,
   },
