@@ -189,6 +189,8 @@ Flat by design. Depth is tonal: surfaces step lighter and warmer as they rise (`
 
 **The Full-Bleed Console Rule.** Manager pages fill the viewport: `.manager-shell-content` is fluid (`width:100%`, no centered max-width cap). Content claims the space between the sidebar rail and the `clamp(16px,3vw,36px)` gutters; internal grids (columns, `auto-fill` tracks) do the adapting per breakpoint. Never re-introduce a centered page cap.
 
+**The Side Drawer Rule.** Collection pages are tables, not forms. The create/edit surface lives in a right drawer (`min(440px,100%)`, slides in 28px, shares the modal veil + backdrop at `var(--z-backdrop)`), opened by the page's primary action (e.g. "Add staff"). Escape and backdrop click close it; the table carries only inline controls (role select, status pill) plus per-row secondary actions.
+
 **The Printed Run Sheet Rule.** The `.run-sheet` section is a sibling of `<main class="app-shell">`, not a child — print hides `.app-shell` and the manager sidebar (`display:none !important`), then reveals the run sheet. Placeholders keep the sage voice `#92998f` at full opacity (global `::placeholder` rule); the UA's dimmed default is overridden.
 
 ## 5. Components
