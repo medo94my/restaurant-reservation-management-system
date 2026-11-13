@@ -42,12 +42,22 @@ type Props = {
 
 function getTableSeats(table: Pick<TableUnit, 'tableType' | 'capacity'>): SeatPosition[] {
   const { width, height } = TABLE_DIMENSIONS[table.tableType]
+
+  // Round to 6 decimals: Math.cos/sin/atan2 can differ by 1 ULP between the
+  // server's V8 and the browser's engine, and React compares the rendered
+  // `transform` string byte-for-byte during hydration.
+  const stableSeat = ({ x, y, rotation }: SeatPosition): SeatPosition => ({
+    x: Math.round(x * 1e6) / 1e6,
+    y: Math.round(y * 1e6) / 1e6,
+    rotation: Math.round(rotation * 1e6) / 1e6,
+  })
+
   if (table.tableType === 'round' || table.tableType === 'oval') {
     return Array.from({ length: table.capacity }, (_, index) => {
       const angle = -Math.PI / 2 + index * (Math.PI * 2 / table.capacity)
       const x = Math.cos(angle) * (width / 2 + 15)
       const y = Math.sin(angle) * (height / 2 + 15)
-      return { x, y, rotation: Math.atan2(x, -y) * (180 / Math.PI) }
+      return stableSeat({ x, y, rotation: Math.atan2(x, -y) * (180 / Math.PI) })
     })
   }
 
@@ -64,7 +74,7 @@ function getTableSeats(table: Pick<TableUnit, 'tableType' | 'capacity'>): SeatPo
     }
   }
   counts.forEach(addSide)
-  return seats
+  return seats.map(stableSeat)
 }
 
 function Chair({ seat }: { seat: SeatPosition }) {
