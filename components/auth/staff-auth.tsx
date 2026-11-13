@@ -92,7 +92,7 @@ export function StaffEntry() {
   )
 }
 
-export function StaffAccountBar({ profile }: { profile: StaffProfileSummary }) {
+export function StaffAccountActions({ profile, compact = false }: { profile: StaffProfileSummary; compact?: boolean }) {
   const router = useRouter()
   const pathname = usePathname()
   const [busy, setBusy] = useState(false)
@@ -104,16 +104,49 @@ export function StaffAccountBar({ profile }: { profile: StaffProfileSummary }) {
     router.refresh()
   }
 
+  if (compact) {
+    return (
+      <div className="staff-account-actions compact">
+        <span className="staff-account-avatar" aria-hidden="true">{profile.name.trim().charAt(0).toUpperCase()}</span>
+        <button type="button" className="icon-only" onClick={signOut} disabled={busy} aria-label={busy ? 'Signing out…' : 'Sign out'} title={busy ? 'Signing out…' : 'Sign out'}>
+          <span className="material-symbols-outlined" aria-hidden="true">logout</span>
+        </button>
+        <style jsx global>{`
+          .staff-account-actions{display:flex;align-items:center;gap:10px}
+          .staff-account-actions.compact{flex-direction:column;align-items:center;gap:12px;padding-top:14px;border-top:1px solid rgba(127,138,127,.16);width:100%}
+          .staff-account-avatar{width:34px;height:34px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;border:1px solid #475248;background:#1f2721;color:#e7e5dc;font:600 13px Georgia,serif}
+          .staff-account-actions button{padding:7px 11px;border:1px solid #475248;border-radius:7px;background:transparent;color:#e7e5dc;font:11px var(--md-ref-typeface-plain,Arial,sans-serif);cursor:pointer}
+          .staff-account-actions button:hover:not(:disabled){border-color:#c6a06a;color:#dfbd88}
+          .staff-account-actions button:disabled{opacity:.55;cursor:wait}
+          .staff-account-actions button.icon-only{width:34px;height:34px;padding:0;display:grid;place-items:center}
+          .staff-account-actions button.icon-only .material-symbols-outlined{font-size:17px}
+        `}</style>
+      </div>
+    )
+  }
+
   return (
-    <div className="staff-account-bar">
+    <div className="staff-account-actions">
       <span className="staff-account-identity"><strong>{profile.name}</strong><span>{profile.staffId} · {profile.role}</span></span>
       {profile.role === 'manager' && !pathname.startsWith('/manager') && <button type="button" onClick={() => router.push('/manager')}>Manager workspace</button>}
       <button type="button" onClick={signOut} disabled={busy}>{busy ? 'Signing out…' : 'Sign out'}</button>
       <style jsx global>{`
-        .staff-account-bar{min-height:48px;display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:8px clamp(16px,3vw,36px);border-bottom:1px solid rgba(127,138,127,.18);background:#151b17;color:#bdc5bb;font:11px var(--md-ref-typeface-plain,Arial,sans-serif)}
+        .staff-account-actions{display:flex;align-items:center;gap:10px}
         .staff-account-identity{display:grid;gap:2px;text-align:right}.staff-account-identity strong{color:#f1eee5;font-size:12px}.staff-account-identity span{color:#aab1a7;font-size:10px;text-transform:capitalize}
-        .staff-account-bar button{padding:7px 11px;border:1px solid #475248;border-radius:7px;background:transparent;color:#e7e5dc;font:inherit;cursor:pointer}
-        .staff-account-bar button:hover:not(:disabled){border-color:#c6a06a;color:#dfbd88}.staff-account-bar button:disabled{opacity:.55;cursor:wait}
+        .staff-account-actions button{padding:7px 11px;border:1px solid #475248;border-radius:7px;background:transparent;color:#e7e5dc;font:11px var(--md-ref-typeface-plain,Arial,sans-serif);cursor:pointer}
+        .staff-account-actions button:hover:not(:disabled){border-color:#c6a06a;color:#dfbd88}
+        .staff-account-actions button:disabled{opacity:.55;cursor:wait}
+      `}</style>
+    </div>
+  )
+}
+
+export function StaffAccountBar({ profile }: { profile: StaffProfileSummary }) {
+  return (
+    <div className="staff-account-bar">
+      <StaffAccountActions profile={profile} />
+      <style jsx global>{`
+        .staff-account-bar{min-height:48px;display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:8px clamp(16px,3vw,36px);border-bottom:1px solid rgba(127,138,127,.18);background:#151b17;color:#bdc5bb;font:11px var(--md-ref-typeface-plain,Arial,sans-serif)}
       `}</style>
     </div>
   )

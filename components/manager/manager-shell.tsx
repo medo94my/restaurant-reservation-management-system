@@ -1,33 +1,96 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
-import { StaffAccountBar } from '@/components/auth/staff-auth'
+import { StaffAccountActions } from '@/components/auth/staff-auth'
 
 type Props = { staff: { name: string; staffId: string; role: string }; children: ReactNode }
 
+const NAV_ITEMS = [
+  { href: '/manager', label: 'Operations', icon: 'monitoring', exact: true },
+  { href: '/manager/staff', label: 'Staff', icon: 'badge', exact: false },
+  { href: '/manager/branding', label: 'Branding', icon: 'palette', exact: false },
+  { href: '/hostess', label: 'Host stand', icon: 'event_seat', exact: false },
+]
+
 export function ManagerShell({ staff, children }: Props) {
+  const [open, setOpen] = useState(false)
+  const pathname = usePathname()
+
   return (
-    <div className="manager-shell">
-      <StaffAccountBar profile={staff} />
-      <header className="manager-shell-header">
-        <Link className="manager-shell-brand" href="/manager"><span className="manager-shell-mark" aria-hidden="true">S</span><span><strong>Saffron &amp; Cedar</strong><small>Manager workspace</small></span></Link>
+    <div className={`manager-shell${open ? ' sidebar-open' : ''}`}>
+      <aside className="manager-sidebar" aria-label="Manager workspace">
+        <div className="sidebar-head">
+          <Link className="manager-shell-brand" href="/manager" aria-label="Saffron &amp; Cedar — Operations">
+            <span className="manager-shell-mark" aria-hidden="true">S</span>
+            {open && <span className="sidebar-brand-text"><strong>Saffron &amp; Cedar</strong><small>Manager workspace</small></span>}
+          </Link>
+          <button
+            type="button"
+            className="sidebar-toggle"
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}
+            title={open ? 'Collapse sidebar' : 'Expand sidebar'}
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">{open ? 'menu_open' : 'menu'}</span>
+          </button>
+        </div>
+
         <nav className="manager-nav" aria-label="Manager workspace">
-          <Link href="/manager">Operations</Link>
-          <Link href="/manager/staff">Staff</Link>
-          <Link href="/manager/branding">Branding</Link>
-          <Link href="/hostess">Host stand</Link>
+          {NAV_ITEMS.map((item) => {
+            const active = item.exact ? pathname === item.href : pathname.startsWith(item.href)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={active ? 'active' : undefined}
+                aria-current={active ? 'page' : undefined}
+                title={open ? undefined : item.label}
+                aria-label={open ? undefined : item.label}
+              >
+                <span className="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
+                <span className="sidebar-label">{item.label}</span>
+              </Link>
+            )
+          })}
         </nav>
-      </header>
+
+        <div className="sidebar-foot">
+          <StaffAccountActions profile={staff} compact={!open} />
+        </div>
+      </aside>
+
       <div className="manager-shell-content">{children}</div>
+
       <style jsx global>{`
-        .manager-shell{min-height:100vh;background:#111713;color:#f1eee5;font-family:var(--md-ref-typeface-plain,Arial,sans-serif)}
-        .manager-shell-header{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:14px clamp(18px,4vw,52px);border-bottom:1px solid #30392f;background:#171e18}
-        .manager-shell-brand{display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none}.manager-shell-brand>span:last-child{display:grid;gap:3px}.manager-shell-brand strong{font:600 17px Georgia,serif}.manager-shell-brand small{color:#9eaa9d;font-size:10px;letter-spacing:.12em;text-transform:uppercase}
-        .manager-shell-mark{width:38px;height:38px;display:grid;place-items:center;border:1px solid #8d7648;border-radius:12px;background:#d7b46a18;color:#d7b46a;font:700 20px Georgia,serif}
-        .manager-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.manager-nav a{padding:9px 12px;border-radius:8px;color:#bdc5bb;font-size:12px;text-decoration:none}.manager-nav a:hover,.manager-nav a:focus-visible{background:#293229;color:#f4e4bb;outline:none}
-        .manager-shell-content{max-width:1500px;margin:0 auto;padding:28px clamp(16px,3vw,36px) 48px}
-        @media(max-width:700px){.manager-shell-header{align-items:flex-start;flex-direction:column;gap:14px}.manager-nav{width:100%;justify-content:space-between}.manager-nav a{padding:8px 6px;font-size:11px}.manager-shell-content{padding-top:20px}}
+        .manager-shell{display:flex;min-height:100vh;background:#111713;color:#f1eee5;font-family:var(--md-ref-typeface-plain,Arial,sans-serif)}
+        .manager-sidebar{position:sticky;top:0;align-self:flex-start;height:100vh;width:68px;flex:0 0 68px;display:flex;flex-direction:column;gap:16px;padding:16px 12px;background:#171e18;border-right:1px solid #30392f;overflow:hidden;transition:width .18s ease,flex-basis .18s ease}
+        .manager-shell.sidebar-open .manager-sidebar{width:250px;flex-basis:250px}
+        .sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+        .manager-shell:not(.sidebar-open) .sidebar-head{flex-direction:column;gap:12px}
+        .manager-shell-brand{display:flex;align-items:center;gap:12px;min-width:0;color:inherit;text-decoration:none}
+        .sidebar-brand-text{display:grid;gap:3px;min-width:0}
+        .sidebar-brand-text strong{font:600 15px Georgia,serif;white-space:nowrap}
+        .sidebar-brand-text small{color:#9eaa9d;font-size:10px;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+        .manager-shell-mark{width:38px;height:38px;flex:0 0 auto;display:grid;place-items:center;border:1px solid #8d7648;border-radius:12px;background:#d7b46a18;color:#d7b46a;font:700 20px Georgia,serif}
+        .sidebar-toggle{width:32px;height:32px;flex:0 0 auto;display:grid;place-items:center;padding:0;border:1px solid #475248;border-radius:8px;background:transparent;color:#bdc5bb;cursor:pointer}
+        .sidebar-toggle:hover{border-color:#c6a06a;color:#dfbd88}
+        .sidebar-toggle .material-symbols-outlined{font-size:18px}
+        .manager-nav{display:flex;flex-direction:column;gap:4px}
+        .manager-nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;color:#bdc5bb;font-size:13px;text-decoration:none;white-space:nowrap}
+        .manager-nav a .material-symbols-outlined{font-size:19px;flex:0 0 auto}
+        .manager-nav a:hover,.manager-nav a:focus-visible{background:#293229;color:#f4e4bb;outline:none}
+        .manager-nav a.active{background:#293229;color:#f4e4bb}
+        .manager-shell:not(.sidebar-open) .manager-nav a{justify-content:center;padding:10px 0}
+        .manager-shell:not(.sidebar-open) .sidebar-label{display:none}
+        .sidebar-foot{margin-top:auto}
+        .manager-shell.sidebar-open .sidebar-foot .staff-account-actions{align-items:flex-start}
+        .manager-shell.sidebar-open .staff-account-identity{text-align:left}
+        .manager-shell-content{flex:1;min-width:0;max-width:1500px;margin:0 auto;padding:28px clamp(16px,3vw,36px) 48px}
+        @media(max-width:700px){.manager-shell-content{padding-top:20px}}
       `}</style>
     </div>
   )
