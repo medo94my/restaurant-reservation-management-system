@@ -64,10 +64,10 @@ export function SetupManagerForm() {
       </section>
       )}
       <style jsx global>{`
-        .setup-page{min-height:100vh;display:grid;place-items:center;padding:28px 16px;background:radial-gradient(ellipse at 20% 0%,#40351e 0,transparent 45%),#111713;color:#f4f0e7;font-family:var(--md-ref-typeface-plain,Arial,sans-serif)}
+        .setup-page{min-height:100vh;display:grid;place-items:center;padding:28px 16px;background:radial-gradient(ellipse at 20% 0%,#40351e 0,transparent 45%),#111713;color:#f4f0e7;font-family:var(--font-dm-sans),sans-serif}
         .setup-card{width:min(100%,520px);padding:clamp(22px,4vw,32px);border:1px solid #464537;border-radius:20px;background:#1a201b;box-shadow:0 24px 80px #0005}
-        .setup-eyebrow{margin:0 0 10px;color:#d7b46a;font-size:10px;font-weight:700;letter-spacing:.16em}.setup-card h1{margin:0 0 10px;font:500 clamp(30px,6vw,42px)/1.1 Georgia,serif;letter-spacing:-.03em}.setup-card>p:not(.setup-eyebrow){margin:0;color:#b4bdb1;font-size:13px;line-height:1.65}
-        .setup-form{display:grid;gap:12px;margin-top:22px}.setup-form label{display:grid;gap:7px;color:#e9e6dc;font-size:12px;font-weight:600}.setup-form input{height:45px;padding:0 12px;border:1px solid #4b554b;border-radius:9px;background:#141a15;color:#f5f3ed;font:inherit}.setup-form input:focus{outline:3px solid #d7b46a33;border-color:#d7b46a}.setup-form small{color:#9ba79a;font-weight:400;font-size:10px}.setup-error{margin:0;color:#ffb7aa;font-size:12px}.setup-submit{min-height:48px;padding:0 16px;border:0;border-radius:9px;background:#d7b46a;color:#251f13;font-size:13px;font-weight:700;cursor:pointer}.setup-submit:disabled{opacity:.65;cursor:wait}
+        .setup-eyebrow{margin:0 0 10px;color:#d7b46a;font-size:0.625rem;font-weight:700;letter-spacing:.16em}.setup-card h1{margin:0 0 10px;font:500 clamp(1.875rem,6vw,2.625rem)/1.1 var(--font-playfair),Georgia,serif;letter-spacing:-.03em}.setup-card>p:not(.setup-eyebrow){margin:0;color:#b4bdb1;font-size:0.8125rem;line-height:1.65}
+        .setup-form{display:grid;gap:12px;margin-top:22px}.setup-form label{display:grid;gap:7px;color:#e9e6dc;font-size:0.75rem;font-weight:600}.setup-form input{height:45px;padding:0 12px;border:1px solid #4b554b;border-radius:9px;background:#141a15;color:#f5f3ed;font:inherit}.setup-form input:focus{outline:3px solid #d7b46a33;border-color:#d7b46a}.setup-form small{color:#9ba79a;font-weight:400;font-size:0.625rem}.setup-error{margin:0;color:#ffb7aa;font-size:0.75rem}.setup-submit{min-height:48px;padding:0 16px;border:0;border-radius:9px;background:#d7b46a;color:#251f13;font-size:0.8125rem;font-weight:700;cursor:pointer}.setup-submit:disabled{opacity:.65;cursor:wait}
       `}</style>
     </main>
   )

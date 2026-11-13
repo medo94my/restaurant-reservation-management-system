@@ -68,21 +68,21 @@ export function ManagerShell({ staff, children }: Props) {
       <div className="manager-shell-content">{children}</div>
 
       <style jsx global>{`
-        .manager-shell{display:flex;min-height:100vh;background:#111713;color:#f1eee5;font-family:var(--md-ref-typeface-plain,Arial,sans-serif)}
+        .manager-shell{display:flex;min-height:100vh;background:#111713;color:#f1eee5;font-family:var(--font-dm-sans),sans-serif}
         .manager-sidebar{position:sticky;top:0;align-self:flex-start;height:100vh;width:68px;flex:0 0 68px;display:flex;flex-direction:column;gap:16px;padding:16px 12px;background:#171e18;border-right:1px solid #30392f;overflow:hidden;transition:width .18s ease,flex-basis .18s ease}
         .manager-shell.sidebar-open .manager-sidebar{width:250px;flex-basis:250px}
         .sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
         .manager-shell:not(.sidebar-open) .sidebar-head{flex-direction:column;gap:12px}
         .manager-shell-brand{display:flex;align-items:center;gap:12px;min-width:0;color:inherit;text-decoration:none}
         .sidebar-brand-text{display:grid;gap:3px;min-width:0}
-        .sidebar-brand-text strong{font:600 15px Georgia,serif;white-space:nowrap}
-        .sidebar-brand-text small{color:#9eaa9d;font-size:10px;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
-        .manager-shell-mark{width:38px;height:38px;flex:0 0 auto;display:grid;place-items:center;border:1px solid #8d7648;border-radius:12px;background:#d7b46a18;color:#d7b46a;font:700 20px Georgia,serif}
+        .sidebar-brand-text strong{font:600 0.9375rem Georgia,serif;white-space:nowrap}
+        .sidebar-brand-text small{color:#9eaa9d;font-size:0.625rem;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+        .manager-shell-mark{width:38px;height:38px;flex:0 0 auto;display:grid;place-items:center;border:1px solid #8d7648;border-radius:12px;background:#d7b46a18;color:#d7b46a;font:700 1.25rem Georgia,serif}
         .sidebar-toggle{width:32px;height:32px;flex:0 0 auto;display:grid;place-items:center;padding:0;border:1px solid #475248;border-radius:8px;background:transparent;color:#bdc5bb;cursor:pointer}
         .sidebar-toggle:hover{border-color:#c6a06a;color:#dfbd88}
         .sidebar-toggle .material-symbols-outlined{font-size:18px}
         .manager-nav{display:flex;flex-direction:column;gap:4px}
-        .manager-nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;color:#bdc5bb;font-size:13px;text-decoration:none;white-space:nowrap}
+        .manager-nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;color:#bdc5bb;font-size:0.8125rem;text-decoration:none;white-space:nowrap}
         .manager-nav a .material-symbols-outlined{font-size:19px;flex:0 0 auto}
         .manager-nav a:hover,.manager-nav a:focus-visible{background:#293229;color:#f4e4bb;outline:none}
         .manager-nav a.active{background:#293229;color:#f4e4bb}

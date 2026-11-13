@@ -68,24 +68,24 @@ export function StaffEntry() {
         <p className="staff-entry-security">Staff accounts are created and managed by a restaurant manager.</p>
       </section>
       <style jsx global>{`
-        .staff-entry{min-height:100vh;display:grid;place-items:center;padding:32px 20px;background:radial-gradient(ellipse at 15% 20%,rgba(186,145,79,.17),transparent 34%),linear-gradient(135deg,#111713,#1c241e 58%,#131914);color:#f4f0e7;font-family:var(--md-ref-typeface-plain,Arial,sans-serif)}
+        .staff-entry{min-height:100vh;display:grid;place-items:center;padding:32px 20px;background:radial-gradient(ellipse at 15% 20%,rgba(186,145,79,.17),transparent 34%),linear-gradient(135deg,#111713,#1c241e 58%,#131914);color:#f4f0e7;font-family:var(--font-dm-sans),sans-serif}
         .staff-entry-card{width:min(100%,460px);padding:clamp(28px,6vw,52px);border:1px solid rgba(226,211,179,.18);border-radius:24px;background:rgba(24,31,26,.94);box-shadow:0 28px 80px rgba(0,0,0,.35)}
         .staff-entry-brand{display:flex;align-items:center;gap:13px;margin-bottom:48px}
-        .staff-entry-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:#bd9660;color:#1d241e;font-family:Georgia,serif;font-size:25px;font-weight:700}
-        .staff-entry-overline,.staff-entry-location,.staff-entry-kicker{margin:0;font-size:10px;letter-spacing:.17em;font-weight:700}
-        .staff-entry-overline{color:#f4efe4}.staff-entry-location{margin-top:5px;color:#aab1a7;font-size:9px;letter-spacing:.12em}
+        .staff-entry-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:#bd9660;color:#1d241e;font-family:var(--font-playfair),Georgia,serif;font-size:1.5625rem;font-weight:700}
+        .staff-entry-overline,.staff-entry-location,.staff-entry-kicker{margin:0;font-size:0.625rem;letter-spacing:.17em;font-weight:700}
+        .staff-entry-overline{color:#f4efe4}.staff-entry-location{margin-top:5px;color:#aab1a7;font-size:0.625rem;letter-spacing:.12em}
         .staff-entry-kicker{color:#c7a16b}
-        .staff-entry-copy h1{margin:12px 0 8px;font-family:Georgia,serif;font-weight:500;font-size:clamp(34px,8vw,48px);letter-spacing:-.04em;line-height:1.08}
-        .staff-entry-copy>p:last-child{margin:0;color:#b5bcb3;font-size:14px;line-height:1.6}
+        .staff-entry-copy h1{margin:12px 0 8px;font-family:var(--font-playfair),Georgia,serif;font-weight:500;font-size:clamp(2.125rem,8vw,3rem);letter-spacing:-.04em;line-height:1.08}
+        .staff-entry-copy>p:last-child{margin:0;color:#b5bcb3;font-size:0.875rem;line-height:1.6}
         .staff-entry-form{display:grid;gap:18px;margin-top:32px}
-        .staff-entry-form label{display:grid;gap:8px;color:#e7e5dc;font-size:12px;font-weight:600}
+        .staff-entry-form label{display:grid;gap:8px;color:#e7e5dc;font-size:0.75rem;font-weight:600}
         .staff-entry-form input{width:100%;height:48px;padding:0 14px;border:1px solid #485249;border-radius:10px;background:#151b17;color:#f5f3ed;font:inherit;outline:none;transition:border-color .18s,box-shadow .18s}
         .staff-entry-form input:focus{border-color:#d2aa72;box-shadow:0 0 0 3px rgba(210,170,114,.16)}
-        .staff-entry-submit{height:50px;margin-top:4px;border:0;border-radius:10px;background:#c6a06a;color:#1b211b;font-size:13px;font-weight:750;cursor:pointer;transition:filter .18s,transform .18s}
+        .staff-entry-submit{height:50px;margin-top:4px;border:0;border-radius:10px;background:#c6a06a;color:#1b211b;font-size:0.8125rem;font-weight:750;cursor:pointer;transition:filter .18s,transform .18s}
         .staff-entry-submit:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-1px)}
         .staff-entry-submit:disabled{cursor:wait;opacity:.65}
-        .staff-entry-error{margin:0;color:#ffb7aa;font-size:12px;line-height:1.45}
-        .staff-entry-security{margin:22px 0 0;color:#8f9b90;font-size:10px;line-height:1.5;text-align:center}
+        .staff-entry-error{margin:0;color:#ffb7aa;font-size:0.75rem;line-height:1.45}
+        .staff-entry-security{margin:22px 0 0;color:#8f9b90;font-size:0.625rem;line-height:1.5;text-align:center}
         @media(max-width:480px){.staff-entry-card{border-radius:18px}.staff-entry-brand{margin-bottom:36px}}
       `}</style>
     </main>
@@ -114,8 +114,8 @@ export function StaffAccountActions({ profile, compact = false }: { profile: Sta
         <style jsx global>{`
           .staff-account-actions{display:flex;align-items:center;gap:10px}
           .staff-account-actions.compact{flex-direction:column;align-items:center;gap:12px;padding-top:14px;border-top:1px solid rgba(127,138,127,.16);width:100%}
-          .staff-account-avatar{width:34px;height:34px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;border:1px solid #475248;background:#1f2721;color:#e7e5dc;font:600 13px Georgia,serif}
-          .staff-account-actions button{padding:7px 11px;border:1px solid #475248;border-radius:7px;background:transparent;color:#e7e5dc;font:11px var(--md-ref-typeface-plain,Arial,sans-serif);cursor:pointer}
+          .staff-account-avatar{width:34px;height:34px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;border:1px solid #475248;background:#1f2721;color:#e7e5dc;font:600 0.8125rem Georgia,serif}
+          .staff-account-actions button{padding:7px 11px;border:1px solid #475248;border-radius:7px;background:transparent;color:#e7e5dc;font:0.6875rem var(--font-dm-sans),sans-serif;cursor:pointer}
           .staff-account-actions button:hover:not(:disabled){border-color:#c6a06a;color:#dfbd88}
           .staff-account-actions button:disabled{opacity:.55;cursor:wait}
           .staff-account-actions button.icon-only{width:34px;height:34px;padding:0;display:grid;place-items:center}
@@ -132,8 +132,8 @@ export function StaffAccountActions({ profile, compact = false }: { profile: Sta
       <button type="button" onClick={signOut} disabled={busy}>{busy ? 'Signing out…' : 'Sign out'}</button>
       <style jsx global>{`
         .staff-account-actions{display:flex;align-items:center;gap:10px}
-        .staff-account-identity{display:grid;gap:2px;text-align:right}.staff-account-identity strong{color:#f1eee5;font-size:12px}.staff-account-identity span{color:#aab1a7;font-size:10px;text-transform:capitalize}
-        .staff-account-actions button{padding:7px 11px;border:1px solid #475248;border-radius:7px;background:transparent;color:#e7e5dc;font:11px var(--md-ref-typeface-plain,Arial,sans-serif);cursor:pointer}
+        .staff-account-identity{display:grid;gap:2px;text-align:right}.staff-account-identity strong{color:#f1eee5;font-size:0.75rem}.staff-account-identity span{color:#aab1a7;font-size:0.625rem;text-transform:capitalize}
+        .staff-account-actions button{padding:7px 11px;border:1px solid #475248;border-radius:7px;background:transparent;color:#e7e5dc;font:0.6875rem var(--font-dm-sans),sans-serif;cursor:pointer}
         .staff-account-actions button:hover:not(:disabled){border-color:#c6a06a;color:#dfbd88}
         .staff-account-actions button:disabled{opacity:.55;cursor:wait}
       `}</style>
@@ -146,7 +146,7 @@ export function StaffAccountBar({ profile }: { profile: StaffProfileSummary }) {
     <div className="staff-account-bar">
       <StaffAccountActions profile={profile} />
       <style jsx global>{`
-        .staff-account-bar{min-height:48px;display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:8px clamp(16px,3vw,36px);border-bottom:1px solid rgba(127,138,127,.18);background:#151b17;color:#bdc5bb;font:11px var(--md-ref-typeface-plain,Arial,sans-serif)}
+        .staff-account-bar{min-height:48px;display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:8px clamp(16px,3vw,36px);border-bottom:1px solid rgba(127,138,127,.18);background:#151b17;color:#bdc5bb;font:0.6875rem var(--font-dm-sans),sans-serif}
       `}</style>
     </div>
   )
