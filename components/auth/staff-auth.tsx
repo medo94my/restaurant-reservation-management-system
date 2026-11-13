@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
 
 type StaffProfileSummary = { name: string; staffId: string; role: string }
@@ -94,6 +94,7 @@ export function StaffEntry() {
 
 export function StaffAccountBar({ profile }: { profile: StaffProfileSummary }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [busy, setBusy] = useState(false)
 
   async function signOut() {
@@ -106,7 +107,7 @@ export function StaffAccountBar({ profile }: { profile: StaffProfileSummary }) {
   return (
     <div className="staff-account-bar">
       <span className="staff-account-identity"><strong>{profile.name}</strong><span>{profile.staffId} · {profile.role}</span></span>
-      {profile.role === 'manager' && <button type="button" onClick={() => router.push('/manager')}>Manager workspace</button>}
+      {profile.role === 'manager' && !pathname.startsWith('/manager') && <button type="button" onClick={() => router.push('/manager')}>Manager workspace</button>}
       <button type="button" onClick={signOut} disabled={busy}>{busy ? 'Signing out…' : 'Sign out'}</button>
       <style jsx global>{`
         .staff-account-bar{min-height:48px;display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:8px clamp(16px,3vw,36px);border-bottom:1px solid rgba(127,138,127,.18);background:#151b17;color:#bdc5bb;font:11px var(--md-ref-typeface-plain,Arial,sans-serif)}
