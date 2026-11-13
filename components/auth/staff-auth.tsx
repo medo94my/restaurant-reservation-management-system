@@ -1,0 +1,119 @@
+'use client'
+
+import { useState, type FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
+import { authClient } from '@/lib/auth-client'
+
+type StaffProfileSummary = { name: string; staffId: string; role: string }
+
+export function StaffEntry() {
+  const router = useRouter()
+  const [staffId, setStaffId] = useState('')
+  const [passcode, setPasscode] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError('')
+    setBusy(true)
+    try {
+      const response = await fetch('/api/staff/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staffId: staffId.trim(), passcode }),
+      })
+      if (!response.ok) {
+        const result = await response.json().catch(() => null)
+        throw new Error(typeof result?.error === 'string' ? result.error : 'Unable to sign in. Check your staff ID and passcode.')
+      }
+      router.push('/')
+      router.refresh()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to sign in. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <main className="staff-entry">
+      <section className="staff-entry-card" aria-labelledby="staff-entry-title">
+        <div className="staff-entry-brand">
+          <div className="staff-entry-mark" aria-hidden="true">S</div>
+          <div>
+            <p className="staff-entry-overline">SAFFRON &amp; CEDAR</p>
+            <p className="staff-entry-location">BEIRUT · DINING ROOM</p>
+          </div>
+        </div>
+        <div className="staff-entry-copy">
+          <p className="staff-entry-kicker">RESTAURANT OPERATIONS</p>
+          <h1 id="staff-entry-title">Welcome back.</h1>
+          <p>Sign in with your staff ID to open the right workspace for your role.</p>
+        </div>
+        <form className="staff-entry-form" onSubmit={handleSubmit}>
+          <label>
+            <span>Staff ID</span>
+            <input autoComplete="username" required minLength={3} maxLength={30} value={staffId} onChange={(event) => setStaffId(event.target.value.toLowerCase())} />
+          </label>
+          <label>
+            <span>Passcode</span>
+            <input autoComplete="current-password" type="password" required minLength={8} maxLength={64} value={passcode} onChange={(event) => setPasscode(event.target.value)} />
+          </label>
+          {error && <p className="staff-entry-error" role="alert">{error}</p>}
+          <button className="staff-entry-submit" type="submit" disabled={busy}>
+            {busy ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+        <p className="staff-entry-security">Staff accounts are created and managed by a restaurant manager.</p>
+      </section>
+      <style jsx global>{`
+        .staff-entry{min-height:100vh;display:grid;place-items:center;padding:32px 20px;background:radial-gradient(ellipse at 15% 20%,rgba(186,145,79,.17),transparent 34%),linear-gradient(135deg,#111713,#1c241e 58%,#131914);color:#f4f0e7;font-family:var(--md-ref-typeface-plain,Arial,sans-serif)}
+        .staff-entry-card{width:min(100%,460px);padding:clamp(28px,6vw,52px);border:1px solid rgba(226,211,179,.18);border-radius:24px;background:rgba(24,31,26,.94);box-shadow:0 28px 80px rgba(0,0,0,.35)}
+        .staff-entry-brand{display:flex;align-items:center;gap:13px;margin-bottom:48px}
+        .staff-entry-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:#bd9660;color:#1d241e;font-family:Georgia,serif;font-size:25px;font-weight:700}
+        .staff-entry-overline,.staff-entry-location,.staff-entry-kicker{margin:0;font-size:10px;letter-spacing:.17em;font-weight:700}
+        .staff-entry-overline{color:#f4efe4}.staff-entry-location{margin-top:5px;color:#aab1a7;font-size:9px;letter-spacing:.12em}
+        .staff-entry-kicker{color:#c7a16b}
+        .staff-entry-copy h1{margin:12px 0 8px;font-family:Georgia,serif;font-weight:500;font-size:clamp(34px,8vw,48px);letter-spacing:-.04em;line-height:1.08}
+        .staff-entry-copy>p:last-child{margin:0;color:#b5bcb3;font-size:14px;line-height:1.6}
+        .staff-entry-form{display:grid;gap:18px;margin-top:32px}
+        .staff-entry-form label{display:grid;gap:8px;color:#e7e5dc;font-size:12px;font-weight:600}
+        .staff-entry-form input{width:100%;height:48px;padding:0 14px;border:1px solid #485249;border-radius:10px;background:#151b17;color:#f5f3ed;font:inherit;outline:none;transition:border-color .18s,box-shadow .18s}
+        .staff-entry-form input:focus{border-color:#d2aa72;box-shadow:0 0 0 3px rgba(210,170,114,.16)}
+        .staff-entry-submit{height:50px;margin-top:4px;border:0;border-radius:10px;background:#c6a06a;color:#1b211b;font-size:13px;font-weight:750;cursor:pointer;transition:filter .18s,transform .18s}
+        .staff-entry-submit:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-1px)}
+        .staff-entry-submit:disabled{cursor:wait;opacity:.65}
+        .staff-entry-error{margin:0;color:#ffb7aa;font-size:12px;line-height:1.45}
+        .staff-entry-security{margin:22px 0 0;color:#8f9b90;font-size:10px;line-height:1.5;text-align:center}
+        @media(max-width:480px){.staff-entry-card{border-radius:18px}.staff-entry-brand{margin-bottom:36px}}
+      `}</style>
+    </main>
+  )
+}
+
+export function StaffAccountBar({ profile }: { profile: StaffProfileSummary }) {
+  const router = useRouter()
+  const [busy, setBusy] = useState(false)
+
+  async function signOut() {
+    setBusy(true)
+    await authClient.signOut()
+    router.push('/login')
+    router.refresh()
+  }
+
+  return (
+    <div className="staff-account-bar">
+      <span className="staff-account-identity"><strong>{profile.name}</strong><span>{profile.staffId} · {profile.role}</span></span>
+      {profile.role === 'manager' && <button type="button" onClick={() => router.push('/manager')}>Manager workspace</button>}
+      <button type="button" onClick={signOut} disabled={busy}>{busy ? 'Signing out…' : 'Sign out'}</button>
+      <style jsx global>{`
+        .staff-account-bar{min-height:48px;display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:8px clamp(16px,3vw,36px);border-bottom:1px solid rgba(127,138,127,.18);background:#151b17;color:#bdc5bb;font:11px var(--md-ref-typeface-plain,Arial,sans-serif)}
+        .staff-account-identity{display:grid;gap:2px;text-align:right}.staff-account-identity strong{color:#f1eee5;font-size:12px}.staff-account-identity span{color:#aab1a7;font-size:10px;text-transform:capitalize}
+        .staff-account-bar button{padding:7px 11px;border:1px solid #475248;border-radius:7px;background:transparent;color:#e7e5dc;font:inherit;cursor:pointer}
+        .staff-account-bar button:hover:not(:disabled){border-color:#c6a06a;color:#dfbd88}.staff-account-bar button:disabled{opacity:.55;cursor:wait}
+      `}</style>
+    </div>
+  )
+}

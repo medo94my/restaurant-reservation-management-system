@@ -1,8 +1,7 @@
 import { and, eq, notInArray, sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
 import { db, restaurantGuestProfiles, restaurantWorkspaceConfig } from '@/lib/db'
-import { getManagerSession } from '@/lib/manager-session'
+import { getStaffContext, isManager } from '@/lib/staff-auth'
 import { DEFAULT_FLOOR_ITEMS, DEFAULT_OCCASION_TAGS, DEFAULT_VISIT_TIERS, RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
 import type { CouchShape, CustomerProfile, RestaurantConfig, TableShape, TableStatus, Unit } from '@/lib/restaurant-config'
 
@@ -81,8 +80,8 @@ function isRestaurantConfig(value: unknown): value is RestaurantConfig {
 }
 
 export async function GET(request: Request) {
-  const staffSession = await auth.api.getSession({ headers: request.headers })
-  if (!staffSession?.user) return NextResponse.json({ error: 'Sign in to access restaurant settings.' }, { status: 401 })
+  const staffContext = await getStaffContext(request.headers)
+  if (!staffContext) return NextResponse.json({ error: 'Sign in to access restaurant settings.' }, { status: 401 })
 
   try {
   const [row] = await db
@@ -91,7 +90,7 @@ export async function GET(request: Request) {
       .where(eq(restaurantWorkspaceConfig.userId, RESTAURANT_MANAGER_USER_ID))
       .limit(1)
 
-    const session = await getManagerSession()
+    const session = staffContext
     const storedConfig = row?.config as (RestaurantConfig & { tables?: Unit[] }) | undefined
     const legacyItems = storedConfig?.tables ?? []
     const hasLegacyItems = Array.isArray(storedConfig?.tables)
@@ -108,7 +107,7 @@ export async function GET(request: Request) {
         && !item.archived
     })
   let guestRows = session ? await db.select().from(restaurantGuestProfiles)
-    .where(eq(restaurantGuestProfiles.restaurantId, RESTAURANT_MANAGER_USER_ID))
+    .where(eq(restaurantGuestProfiles.restaurantId, session.profile.restaurantId))
     .orderBy(restaurantGuestProfiles.name) : []
 
   if (session && guestRows.length === 0 && storedConfig?.customers?.length) {
@@ -121,7 +120,7 @@ export async function GET(request: Request) {
       occasionTags: customer.occasionTags,
     }))).onConflictDoNothing()
     guestRows = await db.select().from(restaurantGuestProfiles)
-      .where(eq(restaurantGuestProfiles.restaurantId, RESTAURANT_MANAGER_USER_ID))
+      .where(eq(restaurantGuestProfiles.restaurantId, session.profile.restaurantId))
       .orderBy(restaurantGuestProfiles.name)
   }
 
@@ -151,11 +150,10 @@ export async function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const staffSession = await auth.api.getSession({ headers: request.headers })
-  if (!staffSession?.user) return NextResponse.json({ error: 'Sign in to update restaurant settings.' }, { status: 401 })
-
-  const session = await getManagerSession()
-  if (!session) return NextResponse.json({ error: 'Manager access required.' }, { status: 401 })
+  const session = await getStaffContext(request.headers)
+  if (!session) return NextResponse.json({ error: 'Sign in to update restaurant settings.' }, { status: 401 })
+  if (!isManager(session)) return NextResponse.json({ error: 'Manager access required.' }, { status: 403 })
+  if (request.headers.get('origin') !== new URL(request.url).origin) return NextResponse.json({ error: 'Request origin is not allowed.' }, { status: 403 })
 
   const config = await request.json().catch(() => null)
   if (!isRestaurantConfig(config) || JSON.stringify(config).length > 500_000) {
@@ -164,7 +162,7 @@ export async function PUT(request: Request) {
 
   try {
   const guests = config.customers.map((customer) => ({
-    restaurantId: RESTAURANT_MANAGER_USER_ID,
+    restaurantId: session.profile.restaurantId,
     phone: customer.phone,
     name: customer.name,
     visits: customer.visits,
@@ -175,7 +173,7 @@ export async function PUT(request: Request) {
 
   await db.transaction(async (tx) => {
     await tx.insert(restaurantWorkspaceConfig)
-      .values({ userId: session.userId, config })
+      .values({ userId: RESTAURANT_MANAGER_USER_ID, config })
       .onConflictDoUpdate({
         target: restaurantWorkspaceConfig.userId,
         set: { config, updatedAt: new Date() },
@@ -197,11 +195,11 @@ export async function PUT(request: Request) {
     const guestPhones = guests.map((guest) => guest.phone)
     if (guestPhones.length) {
       await tx.delete(restaurantGuestProfiles).where(and(
-        eq(restaurantGuestProfiles.restaurantId, RESTAURANT_MANAGER_USER_ID),
+        eq(restaurantGuestProfiles.restaurantId, session.profile.restaurantId),
         notInArray(restaurantGuestProfiles.phone, guestPhones),
       ))
     } else {
-      await tx.delete(restaurantGuestProfiles).where(eq(restaurantGuestProfiles.restaurantId, RESTAURANT_MANAGER_USER_ID))
+      await tx.delete(restaurantGuestProfiles).where(eq(restaurantGuestProfiles.restaurantId, session.profile.restaurantId))
     }
   })
 

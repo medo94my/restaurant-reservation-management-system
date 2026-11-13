@@ -1,8 +1,7 @@
 import { and, asc, eq, gte, lt, ne, sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
 import { db, restaurantGuestProfiles, restaurantReservations, restaurantServiceEvents, restaurantUnitStates, restaurantWorkspaceConfig } from '@/lib/db'
-import { getManagerSession } from '@/lib/manager-session'
+import { getStaffContext, isManager } from '@/lib/staff-auth'
 import { DEFAULT_FLOOR_ITEMS, RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
 import type { CustomerProfile, RestaurantConfig, Unit } from '@/lib/restaurant-config'
 
@@ -79,8 +78,7 @@ function isSameOrigin(request: Request) {
 }
 
 async function hasStaffSession(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers })
-  return Boolean(session?.user)
+  return Boolean(await getStaffContext(request.headers))
 }
 
 async function getFloorItems(): Promise<Unit[]> {
@@ -406,7 +404,8 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: 'Request origin is not allowed.' }, { status: 403 })
-  if (!(await hasStaffSession(request))) return NextResponse.json({ error: 'Sign in to update service data.' }, { status: 401 })
+  const staffContext = await getStaffContext(request.headers)
+  if (!staffContext) return NextResponse.json({ error: 'Sign in to update service data.' }, { status: 401 })
 
   const body = await request.json().catch(() => null)
   const action = typeof body?.action === 'string' ? body.action : ''
@@ -547,8 +546,7 @@ export async function PATCH(request: Request) {
     }
 
     if (action === 'unit-status') {
-      const managerSession = await getManagerSession()
-      if (!managerSession) return NextResponse.json({ error: 'Manager access required.' }, { status: 401 })
+  if (!isManager(staffContext)) return NextResponse.json({ error: 'Manager access required.' }, { status: 403 })
 
       const unitId = typeof body?.unitId === 'string' ? body.unitId.trim().slice(0, 120) : ''
       const status = body?.status as UnitStatus

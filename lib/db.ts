@@ -1,5 +1,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres'
-import { bigint, date, integer, jsonb, numeric, pgTable, primaryKey, text, time, timestamp } from 'drizzle-orm/pg-core'
+import { bigint, boolean, date, integer, jsonb, numeric, pgTable, primaryKey, text, time, timestamp, unique } from 'drizzle-orm/pg-core'
+import type { RestaurantBranding } from '@/lib/branding'
 import { Pool } from 'pg'
 import type { RestaurantConfig } from '@/lib/restaurant-config'
 
@@ -72,6 +73,55 @@ export const restaurantGuestProfiles = pgTable('restaurant_guest_profiles', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [primaryKey({ columns: [table.restaurantId, table.phone] })])
+
+export const authUser = pgTable('user', {
+  id: text('id').primaryKey(),
+  username: text('username'),
+  role: text('role').notNull().default('user'),
+  banned: boolean('banned').notNull().default(false),
+  banReason: text('banReason'),
+  banExpires: timestamp('banExpires', { withTimezone: false }),
+})
+
+export const authSession = pgTable('session', {
+  id: text('id').primaryKey(),
+  userId: text('userId').notNull(),
+  impersonatedBy: text('impersonatedBy'),
+})
+
+export const authAccount = pgTable('account', {
+  id: text('id').primaryKey(),
+  userId: text('userId').notNull(),
+})
+
+export const restaurantStaffProfiles = pgTable('restaurant_staff_profiles', {
+  id: text('id').primaryKey(),
+  restaurantId: text('restaurant_id').notNull(),
+  authUserId: text('auth_user_id').notNull().unique(),
+  staffId: text('staff_id').notNull(),
+  name: text('name').notNull(),
+  role: text('role').notNull(),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [unique('restaurant_staff_profiles_staff_id_unique').on(table.restaurantId, table.staffId)])
+
+export const staffLoginAttempts = pgTable('staff_login_attempts', {
+  bucketKey: text('bucket_key').primaryKey(),
+  attempts: integer('attempts').notNull().default(0),
+  lockoutLevel: integer('lockout_level').notNull().default(0),
+  windowStartedAt: timestamp('window_started_at', { withTimezone: true }).notNull().defaultNow(),
+  lockedUntil: timestamp('locked_until', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const restaurantBranding = pgTable('restaurant_branding', {
+  restaurantId: text('restaurant_id').primaryKey(),
+  draft: jsonb('draft').$type<RestaurantBranding>().notNull(),
+  published: jsonb('published').$type<RestaurantBranding>().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  publishedAt: timestamp('published_at', { withTimezone: true }),
+})
 
 const globalForPool = globalThis as unknown as { restaurantPool?: Pool }
 
