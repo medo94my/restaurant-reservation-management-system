@@ -68,9 +68,9 @@ export function ManagerShell({ staff, children }: Props) {
       <div className="manager-shell-content">{children}</div>
 
       <style jsx global>{`
-        .manager-shell{display:flex;min-height:100vh;background:#111713;color:#f1eee5;font-family:var(--font-dm-sans),sans-serif}
-        .manager-sidebar{position:sticky;top:0;align-self:flex-start;height:100vh;width:68px;flex:0 0 68px;display:flex;flex-direction:column;gap:16px;padding:16px 12px;background:#171e18;border-right:1px solid #30392f;overflow:hidden;transition:width .18s ease,flex-basis .18s ease}
-        .manager-shell.sidebar-open .manager-sidebar{width:250px;flex-basis:250px}
+        .manager-shell{display:grid;grid-template-columns:68px minmax(0,1fr);min-height:100vh;background:#111713;color:#f1eee5;font-family:var(--font-dm-sans),sans-serif;transition:grid-template-columns .18s ease}
+        .manager-sidebar{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:16px;padding:16px 12px;background:#171e18;border-right:1px solid #30392f;overflow:hidden}
+        .manager-shell.sidebar-open{grid-template-columns:250px minmax(0,1fr)}
         .sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
         .manager-shell:not(.sidebar-open) .sidebar-head{flex-direction:column;gap:12px}
         .manager-shell-brand{display:flex;align-items:center;gap:12px;min-width:0;color:inherit;text-decoration:none}
@@ -91,7 +91,7 @@ export function ManagerShell({ staff, children }: Props) {
         .sidebar-foot{margin-top:auto}
         .manager-shell.sidebar-open .sidebar-foot .staff-account-actions{align-items:flex-start}
         .manager-shell.sidebar-open .staff-account-identity{text-align:left}
-        .manager-shell-content{flex:1;min-width:0;max-width:1500px;margin:0 auto;padding:28px clamp(16px,3vw,36px) 48px}
+        .manager-shell-content{min-width:0;max-width:1500px;margin:0 auto;padding:28px clamp(16px,3vw,36px) 48px}
         @media(max-width:700px){.manager-shell-content{padding-top:20px}}
       `}</style>
     </div>

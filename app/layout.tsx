@@ -1,14 +1,7 @@
 import type { Metadata, Viewport } from 'next'
-import { DM_Sans, Playfair_Display, Roboto } from 'next/font/google'
-import { MaterialWebLoader } from '@/components/material-web-loader'
+import { DM_Sans, Playfair_Display } from 'next/font/google'
 import './globals.css'
 
-const roboto = Roboto({
-  weight: ['300', '400', '500', '700'],
-  subsets: ['latin'],
-  variable: '--font-roboto',
-  display: 'swap',
-})
 const dmSans = DM_Sans({
   weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
@@ -39,7 +32,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${roboto.variable} ${dmSans.variable} ${playfair.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${dmSans.variable} ${playfair.variable}`} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -54,7 +47,6 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <MaterialWebLoader />
         {children}
       </body>
     </html>

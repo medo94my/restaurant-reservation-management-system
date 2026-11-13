@@ -8,7 +8,6 @@
     "start": "next start"
   },
   "dependencies": {
-    "@material/web": "^2.4.1",
     "@vercel/blob": "^2.9.0",
     "better-auth": "^1.7.23",
     "drizzle-orm": "^0.45.4",
