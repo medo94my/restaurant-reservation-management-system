@@ -3,11 +3,12 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { authAccount, authSession, authUser, db, restaurantStaffProfiles } from '@/lib/db'
 import { getStaffContext, isManager } from '@/lib/staff-auth'
+import { isSameOrigin } from '@/lib/same-origin'
 
 export async function PATCH(request: Request, contextParams: { params: Promise<{ id: string }> }) {
   const context = await getStaffContext(request.headers)
   if (!isManager(context)) return NextResponse.json({ error: 'Manager access required.' }, { status: context ? 403 : 401 })
-  if (request.headers.get('origin') !== new URL(request.url).origin) return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
+  if (!isSameOrigin(request)) return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
 
   const { id } = await contextParams.params
   let body: unknown
@@ -66,7 +67,7 @@ export async function PATCH(request: Request, contextParams: { params: Promise<{
 export async function DELETE(request: Request, contextParams: { params: Promise<{ id: string }> }) {
   const context = await getStaffContext(request.headers)
   if (!isManager(context)) return NextResponse.json({ error: 'Manager access required.' }, { status: context ? 403 : 401 })
-  if (request.headers.get('origin') !== new URL(request.url).origin) return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
+  if (!isSameOrigin(request)) return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
 
   const { id } = await contextParams.params
   const [staff] = await db.select().from(restaurantStaffProfiles).where(and(

@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { db, authUser, restaurantStaffProfiles } from '@/lib/db'
 import { clearLoginThrottle, consumeLoginThrottle, loginThrottleKeys, staffAuthUsername } from '@/lib/staff-auth'
+import { isSameOrigin } from '@/lib/same-origin'
 import { RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
 
 function sameSecret(candidate: string, expected: string) {
@@ -18,8 +19,7 @@ function accountEmail(staffId: string) {
 }
 
 export async function POST(request: Request) {
-  const origin = new URL(request.url).origin
-  if (request.headers.get('origin') !== origin) return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
+  if (!isSameOrigin(request)) return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
 
   let body: unknown
   try {

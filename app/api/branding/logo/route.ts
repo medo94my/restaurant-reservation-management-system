@@ -1,6 +1,7 @@
 import { put } from '@vercel/blob'
 import { NextResponse } from 'next/server'
 import { getStaffContext, isManager } from '@/lib/staff-auth'
+import { isSameOrigin } from '@/lib/same-origin'
 
 export const runtime = 'nodejs'
 
@@ -17,7 +18,7 @@ function hasValidSignature(bytes: Buffer, contentType: string) {
 export async function POST(request: Request) {
   const context = await getStaffContext(request.headers)
   if (!isManager(context)) return NextResponse.json({ error: 'Manager access required.' }, { status: context ? 403 : 401 })
-  if (request.headers.get('origin') !== new URL(request.url).origin) return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
+  if (!isSameOrigin(request)) return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
 
   const formData = await request.formData().catch(() => null)
   const file = formData?.get('file')

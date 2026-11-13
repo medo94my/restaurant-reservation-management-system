@@ -2,6 +2,7 @@ import { and, eq, notInArray, sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { db, restaurantGuestProfiles, restaurantWorkspaceConfig } from '@/lib/db'
 import { getStaffContext, isManager } from '@/lib/staff-auth'
+import { isSameOrigin } from '@/lib/same-origin'
 import { DEFAULT_FLOOR_ITEMS, DEFAULT_OCCASION_TAGS, DEFAULT_VISIT_TIERS, RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
 import type { CouchShape, CustomerProfile, RestaurantConfig, TableShape, TableStatus, Unit } from '@/lib/restaurant-config'
 
@@ -153,7 +154,7 @@ export async function PUT(request: Request) {
   const session = await getStaffContext(request.headers)
   if (!session) return NextResponse.json({ error: 'Sign in to update restaurant settings.' }, { status: 401 })
   if (!isManager(session)) return NextResponse.json({ error: 'Manager access required.' }, { status: 403 })
-  if (request.headers.get('origin') !== new URL(request.url).origin) return NextResponse.json({ error: 'Request origin is not allowed.' }, { status: 403 })
+  if (!isSameOrigin(request)) return NextResponse.json({ error: 'Request origin is not allowed.' }, { status: 403 })
 
   const config = await request.json().catch(() => null)
   if (!isRestaurantConfig(config) || JSON.stringify(config).length > 500_000) {

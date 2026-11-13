@@ -4,12 +4,13 @@ import { auth } from '@/lib/auth'
 import { db, restaurantStaffProfiles } from '@/lib/db'
 import { clearLoginThrottle, consumeLoginThrottle, loginThrottleKeys, staffAuthUsername } from '@/lib/staff-auth'
 import { RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
+import { isSameOrigin } from '@/lib/same-origin'
 
 const genericFailure = () => NextResponse.json({ error: 'Unable to sign in. Check your staff ID and passcode.' }, { status: 401 })
 
 export async function POST(request: Request) {
   const requestOrigin = request.headers.get('origin')
-  if (requestOrigin && requestOrigin !== new URL(request.url).origin) {
+  if (requestOrigin && !isSameOrigin(request)) {
     return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
   }
 

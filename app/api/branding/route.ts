@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { DEFAULT_BRANDING, isRestaurantBranding } from '@/lib/branding'
 import { db, restaurantBranding } from '@/lib/db'
 import { getStaffContext, isManager } from '@/lib/staff-auth'
+import { isSameOrigin } from '@/lib/same-origin'
 
 export const runtime = 'nodejs'
 
@@ -23,7 +24,7 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   const context = await getStaffContext(request.headers)
   if (!isManager(context)) return NextResponse.json({ error: 'Manager access required.' }, { status: context ? 403 : 401 })
-  if (request.headers.get('origin') !== new URL(request.url).origin) return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
+  if (!isSameOrigin(request)) return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
 
   const payload: unknown = await request.json().catch(() => null)
   if (!payload || typeof payload !== 'object') return NextResponse.json({ error: 'Invalid branding settings.' }, { status: 400 })

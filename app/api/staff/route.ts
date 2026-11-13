@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { authUser, db, restaurantStaffProfiles } from '@/lib/db'
 import { getStaffContext, isManager, staffAuthUsername } from '@/lib/staff-auth'
 import { RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
+import { isSameOrigin } from '@/lib/same-origin'
 import { createHash } from 'node:crypto'
 
 function accountEmail(staffId: string) {
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const context = await getStaffContext(request.headers)
   if (!isManager(context)) return NextResponse.json({ error: 'Manager access required.' }, { status: context ? 403 : 401 })
-  if (request.headers.get('origin') !== new URL(request.url).origin) return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
+  if (!isSameOrigin(request)) return NextResponse.json({ error: 'Request rejected.' }, { status: 403 })
 
   try {
     const body: unknown = await request.json()

@@ -2,6 +2,7 @@ import { and, asc, eq, gte, lt, ne, sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { db, restaurantGuestProfiles, restaurantReservations, restaurantServiceEvents, restaurantUnitStates, restaurantWorkspaceConfig } from '@/lib/db'
 import { getStaffContext, isManager } from '@/lib/staff-auth'
+import { isSameOrigin as checkSameOrigin } from '@/lib/same-origin'
 import { DEFAULT_FLOOR_ITEMS, RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
 import type { CustomerProfile, RestaurantConfig, Unit } from '@/lib/restaurant-config'
 
@@ -74,7 +75,7 @@ function localMidnightAsUtc(dateKey: string) {
 }
 
 function isSameOrigin(request: Request) {
-  return request.headers.get('origin') === new URL(request.url).origin
+  return checkSameOrigin(request)
 }
 
 async function hasStaffSession(request: Request) {
