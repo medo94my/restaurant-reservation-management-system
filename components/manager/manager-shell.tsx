@@ -11,7 +11,7 @@ type Props = { staff: { name: string; staffId: string; role: string }; children:
 const NAV_ITEMS = [
   { href: '/manager', label: 'Operations', icon: 'monitoring' },
   { href: '/manager/staff', label: 'Staff', icon: 'badge' },
-  { href: '/manager/branding', label: 'Branding', icon: 'palette' },
+  { href: '/manager/settings', label: 'Settings', icon: 'settings' },
   { href: '/hostess', label: 'Host stand', icon: 'event_seat' },
 ]
 

@@ -141,7 +141,9 @@
     ],
     "rules": [
       { "name": "The Gilded Entry Rule", "body": "Saffron gold appears only on things the manager must find or act on: the primary button, the active tab, the highlighted number, the back link. If gold covers more than ~10% of a screen, something is gilded that shouldn't be. Its rarity is the point.", "section": "colors" },
-      { "name": "The Lift, Don't Drop Rule", "body": "Hover never adds a shadow. Affordance is a border-color shift toward gold plus a 1–2px translateY lift. Shadows are reserved for modals, focus rings, and the live dot.", "section": "elevation" }
+      { "name": "The Lift, Don't Drop Rule", "body": "Hover never adds a shadow. Affordance is a border-color shift toward gold plus a 1–2px translateY lift. Shadows are reserved for modals, focus rings, and the live dot.", "section": "elevation" },
+      { "name": "The Settings Consolidation Rule", "body": "All shared workspace configuration lives on /manager/settings behind pill tabs (Branding, Visit tiers, Occasion tags) with debounced auto-save and a status pill. Collection pages assign and record data but never define shared config — the guests page assigns occasion tags and reads tiers, it does not edit them.", "section": "layout" },
+      { "name": "The Guest Ledger Rule", "body": "The guest book is a table (Guest, Lifetime visits, Tier, Tags, Note) with inline per-cell editing and an inline add row above. Tier pills are derived from Settings and never editable; the tag cell renders toggle pills from the catalog. At ≤860px rows collapse to labeled stacked rows via td::before, matching the staff table.", "section": "layout" }
     ],
     "dos": [
       "Do keep saffron gold rare and purposeful — primary actions, active states, highlights only",

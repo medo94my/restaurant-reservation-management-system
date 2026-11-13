@@ -1,5 +1,5 @@
-import { BrandingEditor } from '@/components/manager/branding-editor'
+import { redirect } from 'next/navigation'
 
-export default function BrandingPage() {
-  return <BrandingEditor />
+export default function BrandingRedirectPage() {
+  redirect('/manager/settings')
 }
