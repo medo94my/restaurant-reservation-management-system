@@ -38,19 +38,16 @@ export function SetupManagerForm() {
     }
   }
 
-  if (complete) {
-    return (
-      <section className="setup-card" aria-labelledby="setup-done-title">
-        <p className="setup-eyebrow">FIRST MANAGER CREATED</p>
-        <h1 id="setup-done-title">You’re ready to open.</h1>
-        <p>Your manager account is set up. Sign in with the staff ID and passcode you just created.</p>
-        <button className="setup-submit" onClick={() => router.push('/login')}>Continue to sign in</button>
-      </section>
-    )
-  }
-
   return (
     <main className="setup-page">
+      {complete ? (
+        <section className="setup-card" aria-labelledby="setup-done-title">
+          <p className="setup-eyebrow">FIRST MANAGER CREATED</p>
+          <h1 id="setup-done-title">You’re ready to open.</h1>
+          <p>Your manager account is set up. Sign in with the staff ID and passcode you just created.</p>
+          <button className="setup-submit" onClick={() => router.push('/login')}>Continue to sign in</button>
+        </section>
+      ) : (
       <section className="setup-card" aria-labelledby="setup-title">
         <p className="setup-eyebrow">ONE-TIME WORKSPACE SETUP</p>
         <h1 id="setup-title">Create the first manager.</h1>
@@ -65,6 +62,7 @@ export function SetupManagerForm() {
           <button className="setup-submit" type="submit" disabled={busy}>{busy ? 'Creating account…' : 'Create manager account'}</button>
         </form>
       </section>
+      )}
       <style jsx global>{`
         .setup-page{min-height:100vh;display:grid;place-items:center;padding:28px 16px;background:radial-gradient(ellipse at 20% 0%,#40351e 0,transparent 45%),#111713;color:#f4f0e7;font-family:var(--md-ref-typeface-plain,Arial,sans-serif)}
         .setup-card{width:min(100%,520px);padding:clamp(22px,4vw,32px);border:1px solid #464537;border-radius:20px;background:#1a201b;box-shadow:0 24px 80px #0005}
