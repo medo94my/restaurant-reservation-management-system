@@ -81,7 +81,7 @@ export function StaffEntry() {
         .staff-entry-form label{display:grid;gap:8px;color:#e7e5dc;font-size:0.75rem;font-weight:600}
         .staff-entry-form input{width:100%;height:48px;padding:0 14px;border:1px solid #485249;border-radius:10px;background:#151b17;color:#f5f3ed;font:inherit;outline:none;transition:border-color .18s,box-shadow .18s}
         .staff-entry-form input:focus{border-color:#d2aa72;box-shadow:0 0 0 3px rgba(210,170,114,.16)}
-        .staff-entry-submit{height:50px;margin-top:4px;border:0;border-radius:10px;background:#c6a06a;color:#1b211b;font-size:0.8125rem;font-weight:750;cursor:pointer;transition:filter .18s,transform .18s}
+        .staff-entry-submit{height:50px;margin-top:4px;border:0;border-radius:10px;background:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 92%,black);color:#1b211b;font-size:0.8125rem;font-weight:750;cursor:pointer;transition:filter .18s,transform .18s}
         .staff-entry-submit:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-1px)}
         .staff-entry-submit:disabled{cursor:wait;opacity:.65}
         .staff-entry-error{margin:0;color:#ffb7aa;font-size:0.75rem;line-height:1.45}
@@ -116,7 +116,7 @@ export function StaffAccountActions({ profile, compact = false }: { profile: Sta
           .staff-account-actions.compact{flex-direction:column;align-items:center;gap:12px;padding-top:14px;border-top:1px solid rgba(127,138,127,.16);width:100%}
           .staff-account-avatar{width:34px;height:34px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;border:1px solid #475248;background:#1f2721;color:#e7e5dc;font:600 0.8125rem Georgia,serif}
           .staff-account-actions button{padding:7px 11px;border:1px solid #475248;border-radius:7px;background:transparent;color:#e7e5dc;font:0.6875rem var(--font-dm-sans),sans-serif;cursor:pointer}
-          .staff-account-actions button:hover:not(:disabled){border-color:#c6a06a;color:#dfbd88}
+          .staff-account-actions button:hover:not(:disabled){border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 92%,black);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 83%,white)}
           .staff-account-actions button:disabled{opacity:.55;cursor:wait}
           .staff-account-actions button.icon-only{width:34px;height:34px;padding:0;display:grid;place-items:center}
           .staff-account-actions button.icon-only .material-symbols-outlined{font-size:17px}
@@ -134,7 +134,7 @@ export function StaffAccountActions({ profile, compact = false }: { profile: Sta
         .staff-account-actions{display:flex;align-items:center;gap:10px}
         .staff-account-identity{display:grid;gap:2px;text-align:right}.staff-account-identity strong{color:#f1eee5;font-size:0.75rem}.staff-account-identity span{color:#aab1a7;font-size:0.625rem;text-transform:capitalize}
         .staff-account-actions button{padding:7px 11px;border:1px solid #475248;border-radius:7px;background:transparent;color:#e7e5dc;font:0.6875rem var(--font-dm-sans),sans-serif;cursor:pointer}
-        .staff-account-actions button:hover:not(:disabled){border-color:#c6a06a;color:#dfbd88}
+        .staff-account-actions button:hover:not(:disabled){border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 92%,black);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 83%,white)}
         .staff-account-actions button:disabled{opacity:.55;cursor:wait}
       `}</style>
     </div>

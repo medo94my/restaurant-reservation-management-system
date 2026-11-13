@@ -77,9 +77,9 @@ export function ManagerShell({ staff, children }: Props) {
         .sidebar-brand-text{display:grid;gap:3px;min-width:0}
         .sidebar-brand-text strong{font:600 0.9375rem Georgia,serif;white-space:nowrap}
         .sidebar-brand-text small{color:#9eaa9d;font-size:0.625rem;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
-        .manager-shell-mark{width:38px;height:38px;flex:0 0 auto;display:grid;place-items:center;border:1px solid #8d7648;border-radius:12px;background:#d7b46a18;color:#d7b46a;font:700 1.25rem Georgia,serif}
+        .manager-shell-mark{width:38px;height:38px;flex:0 0 auto;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--restaurant-primary,#d7b46a) 66%,black);border-radius:12px;background:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 9.4%,transparent);color:var(--restaurant-primary,#d7b46a);font:700 1.25rem Georgia,serif}
         .sidebar-toggle{width:32px;height:32px;flex:0 0 auto;display:grid;place-items:center;padding:0;border:1px solid #475248;border-radius:8px;background:transparent;color:#bdc5bb;cursor:pointer}
-        .sidebar-toggle:hover{border-color:#c6a06a;color:#dfbd88}
+        .sidebar-toggle:hover{border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 92%,black);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 83%,white)}
         .sidebar-toggle .material-symbols-outlined{font-size:18px}
         .manager-nav{display:flex;flex-direction:column;gap:4px}
         .manager-nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;color:#bdc5bb;font-size:0.8125rem;text-decoration:none;white-space:nowrap}
