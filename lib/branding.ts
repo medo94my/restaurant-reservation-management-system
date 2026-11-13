@@ -16,6 +16,12 @@ export type RestaurantBranding = {
   font: 'sans' | 'serif' | 'system'
 }
 
+/** Blobs live in a private store; render them through the authenticated streaming route. */
+export function logoViewSrc(logo: { pathname: string } | null | undefined): string | null {
+  if (!logo?.pathname) return null
+  return `/api/branding/logo/view?pathname=${encodeURIComponent(logo.pathname)}`
+}
+
 export const DEFAULT_BRANDING: RestaurantBranding = {
   restaurantName: 'Saffron & Cedar',
   tagline: 'Beirut · Dining Room',

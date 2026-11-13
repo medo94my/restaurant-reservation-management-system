@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     if (!hasValidSignature(signature, file.type)) return NextResponse.json({ error: 'The selected file is not a valid supported image.' }, { status: 400 })
 
     const blob = await put(`restaurant-logos/${context.profile.restaurantId}/logo`, file, {
-      access: 'public',
+      access: 'private',
       addRandomSuffix: true,
       contentType: file.type,
     })
