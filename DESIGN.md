@@ -178,12 +178,16 @@ Flat by design. Depth is tonal: surfaces step lighter and warmer as they rise (`
 
 ### Shadow Vocabulary
 - **Modal veil** (`0 24px 90px #0009` / `0 28px 80px rgba(0,0,0,.35)`): Only for true overlays — dialogs floating above the page.
-- **Focus ring** (`0 0 0 2px #d0ad6428` on inputs; `0 0 0 3px rgba(210,170,114,.16)`): Gold-tinted rings for keyboard focus. Always paired with a border-color shift to `#d0ad64`.
+- **Focus ring** (`var(--focus-ring)` at `0 0 0 2px` on inputs, `0 0 0 3px` on form fields): Gold-tinted ring for keyboard focus, tokenized once in `globals.css` (`--focus-ring: color-mix(in srgb, color-mix(in srgb, var(--restaurant-primary, #d7b46a) 97%, black) 16%, transparent)`). Always paired with a border shift to `color-mix(in srgb, var(--restaurant-primary, #d7b46a) 97%, black)`; inputs set `outline:none` so the ring is the single indicator. A global `:focus-visible` baseline (2px gold outline + 2px offset) covers every control without its own rule.
 - **Live glow** (`0 0 12px #72bd8d88`): Exclusively the live-service dot. A green candle, not a design motif.
 - **Inset hairline** (`inset 0 0 0 1px #45483a`): Reinforces selected-tab edges without a shadow.
 
 ### Named Rules
 **The Lift, Don't Drop Rule.** Hover never adds a shadow. Affordance is signaled by a border-color shift to gold and a 1–2px `translateY` lift. Shadows are reserved for things that are actually floating.
+
+**The One Veil Rule.** Overlays stack exactly one layer deep: the modal backdrop sits at `z-index: var(--z-backdrop)` (tokenized as 20 in `globals.css`). Nothing else in the product competes for a z-index.
+
+**The Printed Run Sheet Rule.** The `.run-sheet` section is a sibling of `<main class="app-shell">`, not a child — print hides `.app-shell` and the manager sidebar (`display:none !important`), then reveals the run sheet. Placeholders keep the sage voice `#92998f` at full opacity (global `::placeholder` rule); the UA's dimmed default is overridden.
 
 ## 5. Components
 

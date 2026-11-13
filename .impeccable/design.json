@@ -77,8 +77,8 @@
     },
     "shadows": [
       { "name": "modal-veil", "value": "0 24px 90px #0009", "purpose": "Dialogs floating above the page. Never on resting components." },
-      { "name": "focus-ring-gold", "value": "0 0 0 2px #d0ad6428", "purpose": "Input focus, paired with border-color #d0ad64." },
-      { "name": "focus-ring-gold-lg", "value": "0 0 0 3px rgba(210,170,114,.16)", "purpose": "Auth form focus rings." },
+      { "name": "focus-ring-gold", "value": "0 0 0 2px var(--focus-ring)", "purpose": "Input focus ring, paired with border color-mix(primary 97%, black). Tokenized in globals.css as --focus-ring." },
+      { "name": "focus-ring-gold-lg", "value": "0 0 0 3px var(--focus-ring)", "purpose": "Auth and form-field focus rings; same token at 3px." },
       { "name": "live-glow", "value": "0 0 12px #72bd8d88", "purpose": "Exclusively the live-service dot." }
     ],
     "motion": [
