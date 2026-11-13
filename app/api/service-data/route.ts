@@ -269,6 +269,8 @@ export async function GET(request: Request) {
   }
 }
 
+class UnitUnavailableError extends Error {}
+
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: 'Request origin is not allowed.' }, { status: 403 })
   if (!(await hasStaffSession(request))) return NextResponse.json({ error: 'Sign in to create reservations.' }, { status: 401 })
@@ -284,6 +286,10 @@ export async function POST(request: Request) {
   const notes = typeof body?.note === 'string' ? body.note.trim().slice(0, 500) : ''
   const tags = Array.isArray(body?.tags) ? body.tags.filter((tag: unknown): tag is string => typeof tag === 'string').map((tag: string) => tag.trim().slice(0, 64)).filter(Boolean).slice(0, 40) : []
   const serviceDate = isDateKey(body?.serviceDate) ? body.serviceDate : beirutDate()
+  // Unit state is keyed only by restaurant+unit (no date), so it must only be
+  // touched for the current service date — a future booking would otherwise
+  // occupy today's live floor.
+  const isLiveServiceDate = serviceDate === beirutDate()
   const requestId = typeof body?.clientRequestId === 'string' && /^[a-zA-Z0-9_-]{8,100}$/.test(body.clientRequestId) ? body.clientRequestId : crypto.randomUUID()
 
   if (name.length < 2 || !/^\+?\d{7,20}$/.test(phone) || !Number.isInteger(partySize) || partySize < 1 || partySize > 30 || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) || !unitKinds.includes(kind as (typeof unitKinds)[number]) || !unitId) {
@@ -300,13 +306,6 @@ export async function POST(request: Request) {
     const unit = floorItems.find((item) => item.id === unitId)
     const isUnassigned = /·\s*assign$/i.test(unitId)
     if (!isUnassigned && !unit) return NextResponse.json({ error: 'The selected floor unit no longer exists.' }, { status: 409 })
-
-    const existingState = isUnassigned ? null : (await db.select().from(restaurantUnitStates)
-      .where(and(eq(restaurantUnitStates.restaurantId, restaurantId), eq(restaurantUnitStates.unitId, unitId)))
-      .limit(1))[0]
-    if (existingState && existingState.status !== 'available') {
-      return NextResponse.json({ error: 'That floor unit is no longer available.' }, { status: 409 })
-    }
 
     const formattedTime = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC' })
       .format(new Date(`2000-01-01T${time}:00Z`))
@@ -327,6 +326,31 @@ export async function POST(request: Request) {
         status: 'booked',
         clientRequestId: requestId,
       }).returning()
+
+      // Atomically claim the live floor unit: the conditional upsert lets
+      // exactly one concurrent booking move an available unit to `prep`, and
+      // it only runs for the current service date (see isLiveServiceDate).
+      if (!isUnassigned && isLiveServiceDate) {
+        const claim = {
+          status: 'prep',
+          guestName: name,
+          guestPhone: phone,
+          partySize,
+          serviceTime: formattedTime,
+          notes,
+          reservationId: created.id,
+          updatedAt: new Date(),
+        }
+        const [claimed] = await tx.insert(restaurantUnitStates)
+          .values({ restaurantId, unitId, ...claim })
+          .onConflictDoUpdate({
+            target: [restaurantUnitStates.restaurantId, restaurantUnitStates.unitId],
+            set: claim,
+            setWhere: eq(restaurantUnitStates.status, 'available'),
+          })
+          .returning()
+        if (!claimed) throw new UnitUnavailableError()
+      }
 
       const [profile] = await tx.select().from(restaurantGuestProfiles)
         .where(and(eq(restaurantGuestProfiles.restaurantId, restaurantId), eq(restaurantGuestProfiles.phone, phone)))
@@ -352,33 +376,6 @@ export async function POST(request: Request) {
         },
       })
 
-      if (!isUnassigned) {
-        await tx.insert(restaurantUnitStates).values({
-          restaurantId,
-          unitId,
-          status: 'prep',
-          guestName: name,
-          guestPhone: phone,
-          partySize,
-          serviceTime: formattedTime,
-          notes,
-          reservationId: created.id,
-          updatedAt: new Date(),
-        }).onConflictDoUpdate({
-          target: [restaurantUnitStates.restaurantId, restaurantUnitStates.unitId],
-          set: {
-            status: 'prep',
-            guestName: name,
-            guestPhone: phone,
-            partySize,
-            serviceTime: formattedTime,
-            notes,
-            reservationId: created.id,
-            updatedAt: new Date(),
-          },
-        })
-      }
-
       await tx.insert(restaurantServiceEvents).values({
         restaurantId,
         reservationId: created.id,
@@ -394,7 +391,10 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json({ reservation: serializeReservation(reservation) }, { status: 201 })
-  } catch {
+  } catch (error) {
+    if (error instanceof UnitUnavailableError) {
+      return NextResponse.json({ error: 'That floor unit is no longer available.' }, { status: 409 })
+    }
     const [retry] = await db.select().from(restaurantReservations)
       .where(and(eq(restaurantReservations.restaurantId, restaurantId), eq(restaurantReservations.clientRequestId, requestId)))
       .limit(1)

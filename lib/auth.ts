@@ -13,7 +13,13 @@ function getOrigin(value?: string) {
 }
 
 const isDevelopment = process.env.NODE_ENV === 'development'
-const baseURL =
+
+/**
+ * Trusted public origin for this deployment (env-derived, never the internal
+ * `request.url` behind a proxy). Server-side calls into Better Auth must carry
+ * this origin so its trustedOrigins check passes in every environment.
+ */
+export const baseURL =
   getOrigin(process.env.BETTER_AUTH_URL) ??
   getOrigin(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
   getOrigin(process.env.VERCEL_URL) ??

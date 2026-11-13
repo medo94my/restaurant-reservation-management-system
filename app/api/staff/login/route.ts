@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { auth, baseURL } from '@/lib/auth'
 import { db, restaurantStaffProfiles } from '@/lib/db'
 import { clearLoginThrottle, consumeLoginThrottle, loginThrottleKeys, staffAuthUsername } from '@/lib/staff-auth'
 import { RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
@@ -45,7 +45,10 @@ export async function POST(request: Request) {
 
     if (!profile?.active) return genericFailure()
 
-    const origin = new URL(request.url).origin
+    // Better Auth validates this internal request against its trustedOrigins;
+    // the deployment's public origin is the one always trusted there, unlike
+    // the internal request.url origin behind a proxy.
+    const origin = baseURL
     const authRequest = new Request(new URL('/api/auth/sign-in/username', origin), {
       method: 'POST',
       headers: { 'content-type': 'application/json', origin },

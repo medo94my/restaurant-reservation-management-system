@@ -3,6 +3,7 @@ import { bigint, boolean, date, integer, jsonb, numeric, pgTable, primaryKey, te
 import type { RestaurantBranding } from '@/lib/branding'
 import { Pool } from 'pg'
 import type { RestaurantConfig } from '@/lib/restaurant-config'
+import { ensureSchema } from '@/lib/schema'
 
 export const restaurantWorkspaceConfig = pgTable('restaurant_workspace_config', {
   userId: text('user_id').primaryKey(),
@@ -135,3 +136,17 @@ export const pool = globalForPool.restaurantPool ?? new Pool({
 if (process.env.NODE_ENV !== 'production') globalForPool.restaurantPool = pool
 
 export const db = drizzle(pool)
+
+// Gate every pool query on the schema bootstrap so a fresh (or pre-change)
+// database gets its tables created before the first read or write. See
+// lib/schema.ts — it queries through its own pool while bootstrapping, so the
+// gate cannot deadlock. The symbol guard keeps dev HMR from stacking wrappers.
+const schemaGateKey = Symbol.for('murex.schema-gate')
+const schemaGates = globalThis as unknown as Record<symbol, boolean | undefined>
+if (!schemaGates[schemaGateKey]) {
+  schemaGates[schemaGateKey] = true
+  const rawQuery = pool.query.bind(pool) as unknown as (...args: unknown[]) => unknown
+  const rawConnect = pool.connect.bind(pool) as unknown as (...args: unknown[]) => unknown
+  pool.query = ((...args: unknown[]) => ensureSchema().then(() => rawQuery(...args))) as typeof pool.query
+  pool.connect = ((...args: unknown[]) => ensureSchema().then(() => rawConnect(...args))) as typeof pool.connect
+}
