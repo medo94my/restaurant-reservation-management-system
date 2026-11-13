@@ -9,10 +9,10 @@ import { StaffAccountActions } from '@/components/auth/staff-auth'
 type Props = { staff: { name: string; staffId: string; role: string }; children: ReactNode }
 
 const NAV_ITEMS = [
-  { href: '/manager', label: 'Operations', icon: 'monitoring', exact: true },
-  { href: '/manager/staff', label: 'Staff', icon: 'badge', exact: false },
-  { href: '/manager/branding', label: 'Branding', icon: 'palette', exact: false },
-  { href: '/hostess', label: 'Host stand', icon: 'event_seat', exact: false },
+  { href: '/manager', label: 'Operations', icon: 'monitoring' },
+  { href: '/manager/staff', label: 'Staff', icon: 'badge' },
+  { href: '/manager/branding', label: 'Branding', icon: 'palette' },
+  { href: '/hostess', label: 'Host stand', icon: 'event_seat' },
 ]
 
 export function ManagerShell({ staff, children }: Props) {
@@ -41,7 +41,9 @@ export function ManagerShell({ staff, children }: Props) {
 
         <nav className="manager-nav" aria-label="Manager workspace">
           {NAV_ITEMS.map((item) => {
-            const active = item.exact ? pathname === item.href : pathname.startsWith(item.href)
+            const active = item.href === '/manager'
+              ? pathname.startsWith('/manager') && !pathname.startsWith('/manager/staff') && !pathname.startsWith('/manager/branding')
+              : pathname.startsWith(item.href)
             return (
               <Link
                 key={item.href}
