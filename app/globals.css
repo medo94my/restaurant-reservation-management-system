@@ -108,3 +108,21 @@ body {
   font-family: var(--md-ref-typeface-plain);
   -webkit-font-smoothing: antialiased;
 }
+
+:root {
+  --focus-ring: color-mix(in srgb, color-mix(in srgb, var(--restaurant-primary, #d7b46a) 97%, black) 16%, transparent);
+  --z-backdrop: 20;
+}
+
+/* Placeholder text: quiet sage, 4.5:1+ on input surfaces; opacity 1 defeats UA dimming. */
+input::placeholder,
+textarea::placeholder {
+  color: #92998f;
+  opacity: 1;
+}
+
+/* Baseline keyboard-focus visibility. Component rules (higher specificity) override with their own rings. */
+:focus-visible {
+  outline: 2px solid var(--restaurant-primary, #d7b46a);
+  outline-offset: 2px;
+}

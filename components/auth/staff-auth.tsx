@@ -80,7 +80,7 @@ export function StaffEntry() {
         .staff-entry-form{display:grid;gap:18px;margin-top:32px}
         .staff-entry-form label{display:grid;gap:8px;color:#e7e5dc;font-size:0.75rem;font-weight:600}
         .staff-entry-form input{width:100%;height:48px;padding:0 14px;border:1px solid #485249;border-radius:10px;background:#151b17;color:#f5f3ed;font:inherit;outline:none;transition:border-color .18s,box-shadow .18s}
-        .staff-entry-form input:focus{border-color:#d2aa72;box-shadow:0 0 0 3px rgba(210,170,114,.16)}
+        .staff-entry-form input:focus{border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black);box-shadow:0 0 0 3px var(--focus-ring)}
         .staff-entry-submit{height:50px;margin-top:4px;border:0;border-radius:10px;background:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 92%,black);color:#1b211b;font-size:0.8125rem;font-weight:750;cursor:pointer;transition:filter .18s,transform .18s}
         .staff-entry-submit:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-1px)}
         .staff-entry-submit:disabled{cursor:wait;opacity:.65}
