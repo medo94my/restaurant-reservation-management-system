@@ -11,15 +11,15 @@ const roboto = Roboto({
 })
 
 export const metadata: Metadata = {
-  title: 'Saffron & Cedar | Guest & Floor Manager',
+  title: 'Saffron & Cedar | Restaurant Operations',
   description:
-    'Manage guest visit tiers, occasion tags, reservations, and an editable dining-room floor plan for Saffron & Cedar.'
+    'Secure restaurant operations for staff access, reservations, guest service, team management, and restaurant branding.'
 }
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#111312' },
-    { media: '(prefers-color-scheme: dark)', color: '#111312' },
+    { media: '(prefers-color-scheme: light)', color: '#111713' },
+    { media: '(prefers-color-scheme: dark)', color: '#111713' },
   ],
 }
 
@@ -39,12 +39,6 @@ export default function RootLayout({
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
           rel="stylesheet"
-        />
-        {/* Apply stored theme before first paint to avoid a flash */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark")}catch(e){}`,
-          }}
         />
       </head>
       <body>

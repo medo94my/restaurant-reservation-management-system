@@ -38,7 +38,10 @@ export type Booking = {
   note: string
   unit: string
   arrived?: boolean
-}
+  status?: 'booked' | 'arrived' | 'seated' | 'completed' | 'cancelled'
+  tags?: string[]
+  bill?: number
+  }
 
 export type CustomerProfile = {
   phone: string

@@ -5,6 +5,7 @@ import type { CustomerProfile, OccasionTag, VisitTier } from '@/lib/restaurant-c
 
 type Props = {
   customers: CustomerProfile[]
+  monthlyVisitsByPhone: Record<string, number>
   visitTiers: VisitTier[]
   occasionTags: OccasionTag[]
   onCustomersChange: (customers: CustomerProfile[]) => void
@@ -22,7 +23,7 @@ function makeTagId(label: string) {
   return label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
-export function GuestTagsManager({ customers, visitTiers, occasionTags, onCustomersChange, onVisitTiersChange, onOccasionTagsChange }: Props) {
+export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, occasionTags, onCustomersChange, onVisitTiersChange, onOccasionTagsChange }: Props) {
   const [search, setSearch] = useState('')
   const [tagLabel, setTagLabel] = useState('')
   const [guestName, setGuestName] = useState('')
@@ -77,7 +78,7 @@ export function GuestTagsManager({ customers, visitTiers, occasionTags, onCustom
     <div className="guest-settings">
       <section className="guest-panel tier-panel">
         <div className="guest-panel-heading">
-          <div><span className="guest-kicker">Guest segmentation</span><h2>Visit tiers</h2><p>Set the visit count at which a guest becomes a regular or loyal guest.</p></div>
+          <div><span className="guest-kicker">Guest segmentation</span><h2>Visit tiers</h2><p>Set the monthly visit count at which a guest becomes a regular or loyal guest.</p></div>
           <span className="guest-count">{customers.length} profiles</span>
         </div>
         <div className="tier-grid">
@@ -85,22 +86,22 @@ export function GuestTagsManager({ customers, visitTiers, occasionTags, onCustom
             <div className="tier-card" key={tier.id} style={{ borderTopColor: tier.color }}>
               <input className="tier-label-input" aria-label={`${tier.label} tier name`} maxLength={40} value={tier.label} style={{ color: tier.color }} onChange={(event) => updateVisitTier(tier.id, { label: event.target.value })} />
               {tier.id === 'new' ? (
-                <span className="tier-fixed">Starting tier · 0 visits</span>
+                <span className="tier-fixed">Starting tier · 0 monthly visits</span>
               ) : (
                 <span className="tier-input-wrap"><input
-                  aria-label={`${tier.label} starts at visits`}
+                  aria-label={`${tier.label} starts at monthly visits`}
                   type="number"
                   min={tier.id === 'regular' ? 1 : regularMinimum + 1}
                   max={tier.id === 'regular' ? Math.max(1, loyalMinimum - 1) : 999}
                   value={tier.minVisits}
                   onChange={(event) => updateVisitTier(tier.id, { minVisits: tier.id === 'regular' ? Math.min(Math.max(1, loyalMinimum - 1), Math.max(1, Number(event.target.value) || 0)) : Math.max(regularMinimum + 1, Number(event.target.value) || 0) })}
-                /> visits</span>
+                /> monthly visits</span>
               )}
               <span className="tier-subtitle">{tier.id === 'new' ? 'Getting to know us' : tier.id === 'regular' ? 'A familiar face' : 'A cherished regular'}</span>
             </div>
           ))}
         </div>
-        <div className="tier-note">Tier thresholds are applied to guest visit counts. Adjust them any time to fit your service style.</div>
+        <div className="tier-note">Tier thresholds use completed visits this month. Lifetime guest visits are tracked separately.</div>
       </section>
 
       <section className="guest-panel occasion-panel">
@@ -134,16 +135,17 @@ export function GuestTagsManager({ customers, visitTiers, occasionTags, onCustom
         </form>
         {guestError && <p className="guest-error" role="alert">{guestError}</p>}
         <div className="guest-list">
-          {filteredCustomers.map((customer) => {
-            const tier = getTier(customer.visits, visitTiers)
+  {filteredCustomers.map((customer) => {
+    const monthlyVisits = monthlyVisitsByPhone[customer.phone] ?? 0
+    const tier = getTier(monthlyVisits, visitTiers)
             return (
               <article className="guest-row" key={customer.phone}>
                 <div className="guest-identity">
                   <span className="guest-avatar" aria-hidden="true">{customer.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span>
                   <span><strong>{customer.name}</strong><small>{customer.phone}</small></span>
                 </div>
-                <label className="visit-count"><span>Visits</span><input type="number" min={0} max={9999} aria-label={`${customer.name} visit count`} value={customer.visits} onChange={(event) => updateCustomer(customer.phone, { visits: Math.max(0, Math.min(9999, Number(event.target.value) || 0)) })} /></label>
-                <span className="guest-tier" style={{ color: tier?.color, borderColor: `${tier?.color}66`, background: `${tier?.color}14` }}>{tier?.label ?? 'New'}</span>
+                <label className="visit-count"><span>Lifetime visits</span><input type="number" min={0} max={9999} aria-label={`${customer.name} visit count`} value={customer.visits} onChange={(event) => updateCustomer(customer.phone, { visits: Math.max(0, Math.min(9999, Number(event.target.value) || 0)) })} /></label>
+                <span className="guest-tier" title={`${monthlyVisits} completed visits this month`} style={{ color: tier?.color, borderColor: `${tier?.color}66`, background: `${tier?.color}14` }}>{tier?.label ?? 'New'}</span>
                 <label className="guest-note"><span className="sr-only">Notes for {customer.name}</span><input value={customer.note} maxLength={500} placeholder="Service note" onChange={(event) => updateCustomer(customer.phone, { note: event.target.value })} /></label>
                 <div className="guest-tags" aria-label={`${customer.name} occasion tags`}>
                   {occasionTags.map((tag) => {
