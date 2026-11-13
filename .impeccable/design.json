@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-14T00:00:00Z",
+  "title": "Design System: Saffron & Cedar",
+  "extensions": {
+    "colorMeta": {
+      "saffron-gold": {
+        "role": "primary",
+        "displayName": "Saffron Gold",
+        "canonical": "#d7b46a",
+        "tonalRamp": ["#241e11", "#504833", "#806044", "#8d7648", "#b98955", "#c6a06a", "#d7b46a", "#dfbd88", "#efd2a1", "#f4e4bb"]
+      },
+      "on-saffron": {
+        "role": "primary",
+        "displayName": "Ledger Ink on Gold",
+        "canonical": "#241b08"
+      },
+      "deep-charcoal": {
+        "role": "neutral",
+        "displayName": "Deep Charcoal",
+        "canonical": "#111312"
+      },
+      "rail-charcoal": {
+        "role": "neutral",
+        "displayName": "Rail Charcoal",
+        "canonical": "#111713"
+      },
+      "slate-panel": {
+        "role": "neutral",
+        "displayName": "Slate Panel",
+        "canonical": "#171a18"
+      },
+      "raised-surface": {
+        "role": "neutral",
+        "displayName": "Raised Surface",
+        "canonical": "#202421"
+      },
+      "active-surface": {
+        "role": "neutral",
+        "displayName": "Active Surface",
+        "canonical": "#31372f"
+      },
+      "moss-border": {
+        "role": "neutral",
+        "displayName": "Moss Border",
+        "canonical": "#343a34"
+      },
+      "bone-cream": {
+        "role": "neutral",
+        "displayName": "Bone Cream",
+        "canonical": "#eee9df"
+      },
+      "sage-muted": {
+        "role": "neutral",
+        "displayName": "Sage Muted",
+        "canonical": "#9ba198",
+        "tonalRamp": ["#777f75", "#89908a", "#969d94", "#9ba198", "#aeb8ab", "#c7ccc3"]
+      },
+      "service-green": {
+        "role": "secondary",
+        "displayName": "Service Green",
+        "canonical": "#72bd8d"
+      },
+      "terracotta-salmon": {
+        "role": "secondary",
+        "displayName": "Terracotta Salmon",
+        "canonical": "#e07d72"
+      }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Ledger Title", "purpose": "Console page titles — the only place the serif speaks large. Loaded via next/font as --font-playfair; ships as 1.875rem." },
+      "section-heading": { "displayName": "Section Heading", "purpose": "In-section headers and card group titles. Panel/section headings unified at 1.25rem." },
+      "body": { "displayName": "Body", "purpose": "Default reading size for run sheets, lists, descriptions. Loaded via next/font as --font-dm-sans; all UI font sizes ship in rem (10px floor = 0.625rem). Numeric data uses tabular-nums." },
+      "label": { "displayName": "Tracked Label", "purpose": "Eyebrows and category markers — gold, uppercase, wide tracking." },
+      "login-display": { "displayName": "Login Display", "purpose": "Single hero line on login/setup screens. clamp(2.625rem,6vw,4.5rem), weight 500." },
+      "brand-serif": { "displayName": "Brand Serif", "purpose": "Sidebar wordmark and account monograms only (Georgia is system-loaded)." }
+    },
+    "shadows": [
+      { "name": "modal-veil", "value": "0 24px 90px #0009", "purpose": "Dialogs floating above the page. Never on resting components." },
+      { "name": "focus-ring-gold", "value": "0 0 0 2px #d0ad6428", "purpose": "Input focus, paired with border-color #d0ad64." },
+      { "name": "focus-ring-gold-lg", "value": "0 0 0 3px rgba(210,170,114,.16)", "purpose": "Auth form focus rings." },
+      { "name": "live-glow", "value": "0 0 12px #72bd8d88", "purpose": "Exclusively the live-service dot." }
+    ],
+    "motion": [
+      { "name": "state-transition", "value": "0.15s ease", "purpose": "Default for buttons/inputs hover and focus." },
+      { "name": "card-lift", "value": "0.16s ease", "purpose": "Card hover lift (translateY -2px) + border shift to gold." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Gold Button",
+      "kind": "button",
+      "refersTo": "button-gold",
+      "description": "Primary action — the gilded entry. One per view where possible.",
+      "html": "<button class=\"ds-btn-gold\">Save changes</button>",
+      "css": ".ds-btn-gold { min-height: 46px; padding: 0 16px; border-radius: 11px; background: var(--restaurant-primary, #d7b46a); color: var(--restaurant-background, #231d0f); border: 1px solid var(--restaurant-primary, #d7b46a); font: 600 13px 'DM Sans', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 9px; cursor: pointer; transition: 0.15s; } .ds-btn-gold:hover { filter: brightness(1.08); } .ds-btn-gold:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(210,170,114,.16); }"
+    },
+    {
+      "name": "Surface Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default quiet action — raised charcoal with a moss border.",
+      "html": "<button class=\"ds-btn-surface\">View run sheet</button>",
+      "css": ".ds-btn-surface { min-height: 46px; padding: 0 16px; border-radius: 11px; background: #202421; color: #e8e5dc; border: 1px solid #41473f; font: 600 13px 'DM Sans', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 9px; cursor: pointer; transition: 0.15s; text-decoration: none; } .ds-btn-surface:hover { background: #2a302b; border-color: #77765e; } .ds-btn-surface:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(210,170,114,.16); }"
+    },
+    {
+      "name": "Manager Card",
+      "kind": "card",
+      "refersTo": "card-manager",
+      "description": "Section entry card with the Gold Tile icon chip and hover lift.",
+      "html": "<a class=\"ds-manager-card\" href=\"#\"><span class=\"ds-gold-tile\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#d7b46a\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M3 9h18\"/></svg></span><strong>Overview</strong><p>Reservations, covers, revenue, and floor utilization for today's service.</p><span class=\"ds-card-meta\">0 reservations →</span></a>",
+      "css": ".ds-manager-card { display: flex; flex-direction: column; gap: 9px; padding: 20px; border: 1px solid #343a34; border-radius: 14px; background: #171a18; color: #eee9df; text-decoration: none; transition: 0.16s; font-family: 'DM Sans', sans-serif; } .ds-manager-card:hover, .ds-manager-card:focus-visible { border-color: #c6a06a; background: #1b211d; transform: translateY(-2px); outline: none; } .ds-gold-tile { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 11px; background: #d7b46a14; border: 1px solid #8d764866; } .ds-manager-card strong { font-size: 16px; font-weight: 700; } .ds-manager-card p { margin: 0; color: #9ba198; font-size: 12.5px; line-height: 1.55; flex: 1; } .ds-card-meta { display: flex; align-items: center; gap: 7px; color: #d4b66d; font-size: 12px; font-weight: 700; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Compact text field — recessed dark well with a gold focus ring.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Guest name\" />",
+      "css": ".ds-input { height: 37px; border-radius: 8px; padding: 0 9px; color: #f1ede4; background: #151916; border: 1px solid #414840; font: 500 12px 'DM Sans', sans-serif; width: 100%; box-sizing: border-box; transition: 0.15s; } .ds-input::placeholder { color: #777f75; } .ds-input:focus { border-color: #d0ad64; box-shadow: 0 0 0 2px #d0ad6428; outline: none; }"
+    },
+    {
+      "name": "Active Tab",
+      "kind": "nav",
+      "refersTo": "tab-active",
+      "description": "Segmented tab inside the pill strip — gold ink marks the selection.",
+      "html": "<div class=\"ds-tabstrip\"><button class=\"ds-tab ds-tab-active\">Live floor</button><button class=\"ds-tab\">Reservations</button></div>",
+      "css": ".ds-tabstrip { display: flex; gap: 4px; padding: 4px; border: 1px solid #343a34; background: #171a18; border-radius: 12px; width: max-content; font-family: 'DM Sans', sans-serif; } .ds-tab { border: 0; background: transparent; color: #9ba198; padding: 10px 17px; min-height: 42px; border-radius: 9px; font: 600 13px 'DM Sans', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; } .ds-tab.ds-tab-active { background: #31372f; color: #e7c77f; box-shadow: inset 0 0 0 1px #45483a; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Brass Ledger",
+    "overview": "A brass-bound ledger from a fine Levantine restaurant: dark paper, cream ink, and gold used only for the entries that matter. The interface is that ledger made operational — charcoal surfaces layered like stacked paper, sage-gray supporting text, and a single saffron-gold accent that behaves like gold ink: rare, deliberate, always marking something worth finding. Depth comes from tonal layering and 1px moss borders, never resting shadows. Dense and desktop-first, tuned for a manager reading fast in a back office. The system rejects fine-dining theatrics — no gold flooding, no ornate serif flourishes, no decorative gradients. Restraint is the brand.",
+    "keyCharacteristics": [
+      "One accent (saffron gold), ≤10% of any screen, always functional",
+      "Tonal layering on a warm dark base; 1px moss borders do the separating",
+      "DM Sans carries data at 12–13px; serif only for brand voice",
+      "Small radii (8–14px) — crisp paper edges",
+      "Hover = a small translateY lift, never a drop shadow",
+      "Material Symbols Outlined as the only icon system"
+    ],
+    "rules": [
+      { "name": "The Gilded Entry Rule", "body": "Saffron gold appears only on things the manager must find or act on: the primary button, the active tab, the highlighted number, the back link. If gold covers more than ~10% of a screen, something is gilded that shouldn't be. Its rarity is the point.", "section": "colors" },
+      { "name": "The Lift, Don't Drop Rule", "body": "Hover never adds a shadow. Affordance is a border-color shift toward gold plus a 1–2px translateY lift. Shadows are reserved for modals, focus rings, and the live dot.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep saffron gold rare and purposeful — primary actions, active states, highlights only",
+      "Do build depth with tonal layering (#111312 → #171a18 → #202421 → #31372f) and 1px moss borders",
+      "Do signal hover with a border shift toward gold plus a 1–2px translateY lift",
+      "Do center icons with inline-flex + gap, and give leading icons a fixed Gold Tile",
+      "Do pair focus rings with border-color changes: border-color:#d0ad64 + 0 0 0 2px #d0ad6428",
+      "Do use var(--restaurant-primary) for anything that follows manager branding",
+      "Do import Playfair Display and DM Sans via next/font — both are referenced but currently unload"
+    ],
+    "donts": [
+      "Don't reach for fine-dining theatrics — gold everywhere, ornate serif flourishes, decorative gradients (PRODUCT.md anti-reference)",
+      "Don't add side-stripe borders (border-left > 1px) on cards, callouts, or alerts",
+      "Don't use gradient text, glassmorphism, or backdrop-blur decoration",
+      "Don't drop shadows on resting components",
+      "Don't build the hero-metric template — KPI numbers are plain 700-weight cream",
+      "Don't rely on &nbsp; or line-height:1 spans for icon alignment — use flex gap",
+      "Don't put white text on gold — on-saffron is #241b08",
+      "Don't invent one-off surface colors; step through the existing charcoal/slate ramp"
+    ]
+  }
+}
