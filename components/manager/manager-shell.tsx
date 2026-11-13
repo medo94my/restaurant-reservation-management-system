@@ -91,7 +91,7 @@ export function ManagerShell({ staff, children }: Props) {
         .sidebar-foot{margin-top:auto}
         .manager-shell.sidebar-open .sidebar-foot .staff-account-actions{align-items:flex-start}
         .manager-shell.sidebar-open .staff-account-identity{text-align:left}
-        .manager-shell-content{min-width:0;max-width:1500px;margin:0 auto;padding:28px clamp(16px,3vw,36px) 48px}
+        .manager-shell-content{min-width:0;width:100%;padding:28px clamp(16px,3vw,36px) 48px}
         @media(max-width:700px){.manager-shell-content{padding-top:20px}}
       `}</style>
     </div>

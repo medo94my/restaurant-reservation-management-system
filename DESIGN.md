@@ -187,6 +187,8 @@ Flat by design. Depth is tonal: surfaces step lighter and warmer as they rise (`
 
 **The One Veil Rule.** Overlays stack exactly one layer deep: the modal backdrop sits at `z-index: var(--z-backdrop)` (tokenized as 20 in `globals.css`). Nothing else in the product competes for a z-index.
 
+**The Full-Bleed Console Rule.** Manager pages fill the viewport: `.manager-shell-content` is fluid (`width:100%`, no centered max-width cap). Content claims the space between the sidebar rail and the `clamp(16px,3vw,36px)` gutters; internal grids (columns, `auto-fill` tracks) do the adapting per breakpoint. Never re-introduce a centered page cap.
+
 **The Printed Run Sheet Rule.** The `.run-sheet` section is a sibling of `<main class="app-shell">`, not a child — print hides `.app-shell` and the manager sidebar (`display:none !important`), then reveals the run sheet. Placeholders keep the sage voice `#92998f` at full opacity (global `::placeholder` rule); the UA's dimmed default is overridden.
 
 ## 5. Components
