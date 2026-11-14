@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { admin, username } from 'better-auth/plugins'
 import { pool } from '@/lib/db'
+import { requestHostOrigin } from '@/lib/request-host-origin'
 
 function getOrigin(value?: string) {
   if (!value) return undefined
@@ -63,21 +64,6 @@ const inV0IframePreview = Boolean(
 // sign-out working from LAN devices (iPad) and Vercel preview hosts without
 // enumerating every port and hostname, while a cross-site attacker's Origin
 // never matches the serving Host.
-function requestHostOrigin(request: Request | undefined): string | undefined {
-  const host = request?.headers.get('host')?.toLowerCase().trim()
-  if (!request || !host) return undefined
-
-  // Behind a proxy (Vercel, v0) the forwarded header is authoritative; a
-  // direct hit (localhost dev, the iPad on a LAN IP) is always plain http.
-  const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase()
-  const proto = forwardedProto || 'http'
-  try {
-    return new URL(`${proto}://${host}`).origin
-  } catch {
-    return undefined
-  }
-}
-
 export const auth = betterAuth({
   database: pool,
   baseURL,
