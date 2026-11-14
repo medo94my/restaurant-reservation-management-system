@@ -3,12 +3,12 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { authUser, db, restaurantStaffProfiles } from '@/lib/db'
 import { getStaffContext, isManager, staffAuthUsername } from '@/lib/staff-auth'
-import { RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
+import { RESTAURANT_ID } from '@/lib/restaurant-config'
 import { isSameOrigin } from '@/lib/same-origin'
 import { createHash } from 'node:crypto'
 
 function accountEmail(staffId: string) {
-  const key = createHash('sha256').update(`${RESTAURANT_MANAGER_USER_ID}:${staffId}`).digest('hex').slice(0, 24)
+  const key = createHash('sha256').update(`${RESTAURANT_ID}:${staffId}`).digest('hex').slice(0, 24)
   return `staff.${key}@accounts.saffron.invalid`
 }
 

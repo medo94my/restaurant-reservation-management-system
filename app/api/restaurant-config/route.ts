@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { db, restaurantGuestProfiles, restaurantWorkspaceConfig } from '@/lib/db'
 import { getStaffContext, isManager } from '@/lib/staff-auth'
 import { isSameOrigin } from '@/lib/same-origin'
-import { DEFAULT_FLOOR_ITEMS, DEFAULT_OCCASION_TAGS, DEFAULT_VISIT_TIERS, RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
+import { DEFAULT_FLOOR_ITEMS, DEFAULT_OCCASION_TAGS, DEFAULT_VISIT_TIERS, RESTAURANT_ID, RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
 import type { CouchShape, CustomerProfile, RestaurantConfig, TableShape, TableStatus, Unit } from '@/lib/restaurant-config'
 
 export const runtime = 'nodejs'
@@ -113,7 +113,7 @@ export async function GET(request: Request) {
 
   if (session && guestRows.length === 0 && storedConfig?.customers?.length) {
     await db.insert(restaurantGuestProfiles).values(storedConfig.customers.map((customer) => ({
-      restaurantId: RESTAURANT_MANAGER_USER_ID,
+      restaurantId: RESTAURANT_ID,
       phone: customer.phone,
       name: customer.name,
       visits: customer.visits,

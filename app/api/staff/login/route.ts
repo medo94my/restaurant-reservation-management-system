@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { auth, baseURL } from '@/lib/auth'
 import { authSession, db, restaurantStaffProfiles } from '@/lib/db'
 import { clearLoginThrottle, consumeLoginThrottle, loginThrottleKeys, staffAuthUsername } from '@/lib/staff-auth'
-import { RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
+import { RESTAURANT_ID } from '@/lib/restaurant-config'
 import { isSameOrigin } from '@/lib/same-origin'
 
 const genericFailure = () => NextResponse.json({ error: 'Unable to sign in. Check your staff ID and passcode.' }, { status: 401 })
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       .select({ authUserId: restaurantStaffProfiles.authUserId, restaurantId: restaurantStaffProfiles.restaurantId, staffId: restaurantStaffProfiles.staffId, active: restaurantStaffProfiles.active })
       .from(restaurantStaffProfiles)
       .where(and(
-        eq(restaurantStaffProfiles.restaurantId, RESTAURANT_MANAGER_USER_ID),
+        eq(restaurantStaffProfiles.restaurantId, RESTAURANT_ID),
         eq(restaurantStaffProfiles.staffId, staffId),
       ))
       .limit(1)

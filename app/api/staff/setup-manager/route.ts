@@ -5,7 +5,7 @@ import { auth } from '@/lib/auth'
 import { db, authUser, restaurantStaffProfiles } from '@/lib/db'
 import { clearLoginThrottle, consumeLoginThrottle, loginThrottleKeys, staffAuthUsername } from '@/lib/staff-auth'
 import { isSameOrigin } from '@/lib/same-origin'
-import { RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
+import { RESTAURANT_ID } from '@/lib/restaurant-config'
 
 function sameSecret(candidate: string, expected: string) {
   const left = Buffer.from(candidate)
@@ -14,7 +14,7 @@ function sameSecret(candidate: string, expected: string) {
 }
 
 function accountEmail(staffId: string) {
-  const key = createHash('sha256').update(`${RESTAURANT_MANAGER_USER_ID}:${staffId}`).digest('hex').slice(0, 24)
+  const key = createHash('sha256').update(`${RESTAURANT_ID}:${staffId}`).digest('hex').slice(0, 24)
   return `staff.${key}@accounts.saffron.invalid`
 }
 
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       .select({ id: restaurantStaffProfiles.id })
       .from(restaurantStaffProfiles)
       .where(and(
-        eq(restaurantStaffProfiles.restaurantId, RESTAURANT_MANAGER_USER_ID),
+        eq(restaurantStaffProfiles.restaurantId, RESTAURANT_ID),
         eq(restaurantStaffProfiles.role, 'manager'),
       ))
       .limit(1)
@@ -69,14 +69,14 @@ export async function POST(request: Request) {
       .select({ id: restaurantStaffProfiles.id })
       .from(restaurantStaffProfiles)
       .where(and(
-        eq(restaurantStaffProfiles.restaurantId, RESTAURANT_MANAGER_USER_ID),
+        eq(restaurantStaffProfiles.restaurantId, RESTAURANT_ID),
         eq(restaurantStaffProfiles.staffId, staffId),
       ))
       .limit(1)
     if (duplicate) return NextResponse.json({ error: 'Unable to complete manager setup. Check the details and try again.' }, { status: 400 })
 
     const result = await auth.api.signUpEmail({
-      body: { email: accountEmail(staffId), password: passcode, name, username: staffAuthUsername(RESTAURANT_MANAGER_USER_ID, staffId) },
+      body: { email: accountEmail(staffId), password: passcode, name, username: staffAuthUsername(RESTAURANT_ID, staffId) },
       headers: request.headers,
     })
 
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       await transaction.update(authUser).set({ role: 'admin', banned: false }).where(eq(authUser.id, result.user.id))
       await transaction.insert(restaurantStaffProfiles).values({
         id: crypto.randomUUID(),
-        restaurantId: RESTAURANT_MANAGER_USER_ID,
+        restaurantId: RESTAURANT_ID,
         authUserId: result.user.id,
         staffId,
         name,

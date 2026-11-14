@@ -72,6 +72,15 @@ export type RestaurantConfig = {
 }
 
 export const RESTAURANT_MANAGER_USER_ID = 'saffron-cedar-manager'
+/**
+ * Tenant key for restaurant-scoped rows and staff-credential salts. Every
+ * restaurant_* table scopes by a `restaurantId` column and the credential
+ * salts key off it — conceptually distinct from the manager bootstrap user
+ * above, even though today the tenant IS that user (same string, zero data
+ * migration). Keeping the names apart means real multi-tenant later only
+ * touches this line.
+ */
+export const RESTAURANT_ID = RESTAURANT_MANAGER_USER_ID
 
 export const DEFAULT_VISIT_TIERS: VisitTier[] = [
   { id: 'new', label: 'New', minVisits: 0, color: '#879489' },

@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server'
 import { db, restaurantGuestProfiles, restaurantReservations, restaurantServiceEvents, restaurantUnitStates, restaurantWorkspaceConfig } from '@/lib/db'
 import { getStaffContext, isManager } from '@/lib/staff-auth'
 import { isSameOrigin as checkSameOrigin } from '@/lib/same-origin'
-import { DEFAULT_FLOOR_ITEMS, RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
+import { DEFAULT_FLOOR_ITEMS, RESTAURANT_ID } from '@/lib/restaurant-config'
 import type { CustomerProfile, RestaurantConfig, Unit } from '@/lib/restaurant-config'
 
-const restaurantId = RESTAURANT_MANAGER_USER_ID
+const restaurantId = RESTAURANT_ID
 const restaurantTimeZone = 'Asia/Beirut'
 const unitStatuses = ['available', 'seated', 'prep', 'blocked'] as const
 const unitKinds = ['Table', 'Couch', 'Room'] as const
