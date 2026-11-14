@@ -323,6 +323,10 @@ export async function POST(request: Request) {
     const unit = floorItems.find((item) => item.id === unitId)
     const isUnassigned = /·\s*assign$/i.test(unitId)
     if (!isUnassigned && !unit) return NextResponse.json({ error: 'The selected floor unit no longer exists.' }, { status: 409 })
+    // The unit-state row may not exist yet for a unit configured after this
+    // process booted (bootstrap runs once per process), so the floor-config
+    // status is honored here too: a config-blocked unit is never bookable.
+    if (!isUnassigned && unit?.status === 'blocked') return NextResponse.json({ error: 'That floor unit is no longer available.' }, { status: 409 })
 
     const formattedTime = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC' })
       .format(new Date(`2000-01-01T${time}:00Z`))
