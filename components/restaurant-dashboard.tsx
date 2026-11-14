@@ -410,11 +410,9 @@ export default function HomePage({ managerAccess = false, branding = null, manag
         .wizard-cap-hint{color:#8b948a;font-weight:400}
         .wizard-error{margin:0;color:var(--terracotta-salmon);font-size:0.6875rem}
         /* Canvas / grid display toggle */
-        .floor-view-toggle{display:inline-flex;gap:4px;padding:4px;border:1px solid #3b453b;border-radius:10px;background:#1d221e;width:fit-content;margin:0 0 10px}
-        .floor-view-option{display:inline-flex;align-items:center;justify-content:center;min-height:32px;min-width:34px;padding:0 9px;border:1px solid transparent;border-radius:7px;background:none;color:#9daa9a;font:600 0.6875rem inherit;cursor:pointer}
-        .floor-view-option .material-symbols-outlined{font-size:15px}
-        .floor-view-option.on{border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 45%,transparent);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 55%,white);background:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 8%,transparent)}
-        .floor-view-option:focus-visible{outline:2px solid color-mix(in srgb,var(--restaurant-primary,#d7b46a) 76%,white);outline-offset:2px}
+        .floor-view-toggle{display:inline-flex;align-items:center;justify-content:center;min-height:34px;min-width:36px;padding:0 10px;border:1px solid #3b453b;border-radius:10px;background:#1d221e;color:#9daa9a;font:inherit;cursor:pointer;margin:0 0 10px auto}
+        .floor-view-toggle .material-symbols-outlined{font-size:16px}
+        .floor-view-toggle:focus-visible{outline:2px solid color-mix(in srgb,var(--restaurant-primary,#d7b46a) 76%,white);outline-offset:2px}
         .console-main.grid-only{grid-template-columns:1fr}
         @media(max-width:1100px){.console-main{grid-template-columns:1fr}}
     `}</style>
@@ -434,10 +432,7 @@ export default function HomePage({ managerAccess = false, branding = null, manag
       </section>
       {serviceError&&<p className="console-error" role="alert">{serviceError}</p>}
       {consoleNotice&&<p className="console-notice" role="status">{consoleNotice}</p>}
-      <div className="floor-view-toggle" role="group" aria-label="Table display">
-        <button type="button" className={`floor-view-option ${floorView==='canvas'?'on':''}`} aria-pressed={floorView==='canvas'} aria-label="Canvas view" title="Canvas view" onClick={()=>setFloorView('canvas')}>{icon('floor_plan',15)}</button>
-        <button type="button" className={`floor-view-option ${floorView==='grid'?'on':''}`} aria-pressed={floorView==='grid'} aria-label="Grid view" title="Grid view" onClick={()=>setFloorView('grid')}>{icon('grid_view',15)}</button>
-      </div>
+      <button type="button" className="floor-view-toggle" aria-label={floorView==='canvas'?'Switch to grid view':'Switch to canvas view'} title={floorView==='canvas'?'Switch to grid view':'Switch to canvas view'} onClick={()=>setFloorView(floorView==='canvas'?'grid':'canvas')}>{icon(floorView==='canvas'?'grid_view':'floor_plan',16)}</button>
       <div className={`console-main ${floorView==='grid'?'grid-only':''}`}>
         {floorView==='canvas'&&<section className="console-floor-panel" aria-label="Floor plan">
           <EditableFloorPlan items={shownUnits} onActivate={(item) => { setSelected(item); if (item.status === 'seated') setModal('complete'); else if (item.status === 'prep') { const reservation = bookings.find((booking) => booking.unit === item.id); if (reservation) void seatReservation(reservation.id) } else if (item.status === 'available') openBookingWizard({ unitId: item.id }) }} />
