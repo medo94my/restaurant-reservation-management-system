@@ -410,7 +410,7 @@ export default function HomePage({ managerAccess = false, branding = null, manag
         .wizard-cap-hint{color:#8b948a;font-weight:400}
         .wizard-error{margin:0;color:var(--terracotta-salmon);font-size:0.6875rem}
         /* Canvas / grid display toggle */
-        .floor-view-toggle{display:inline-flex;gap:4px;padding:4px;border:1px solid #3b453b;border-radius:10px;background:#1d221e;margin:0 0 10px auto}
+        .floor-view-toggle{display:flex;width:fit-content;gap:4px;padding:4px;border:1px solid #3b453b;border-radius:10px;background:#1d221e;margin:0 0 10px auto}
         .floor-view-option{display:inline-flex;align-items:center;justify-content:center;min-height:30px;width:34px;border:1px solid transparent;border-radius:7px;background:none;color:#9daa9a;font:inherit;cursor:pointer}
         .floor-view-option .material-symbols-outlined{font-size:15px}
         .floor-view-option.on{border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 45%,transparent);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 55%,white);background:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 8%,transparent)}
@@ -435,7 +435,7 @@ export default function HomePage({ managerAccess = false, branding = null, manag
       {serviceError&&<p className="console-error" role="alert">{serviceError}</p>}
       {consoleNotice&&<p className="console-notice" role="status">{consoleNotice}</p>}
       <div className="floor-view-toggle" role="group" aria-label="Table display">
-        <button type="button" className={`floor-view-option ${floorView==='canvas'?'on':''}`} aria-pressed={floorView==='canvas'} aria-label="Canvas view" title="Canvas view" onClick={()=>setFloorView('canvas')}>{icon('floor_plan',15)}</button>
+        <button type="button" className={`floor-view-option ${floorView==='canvas'?'on':''}`} aria-pressed={floorView==='canvas'} aria-label="Canvas view" title="Canvas view" onClick={()=>setFloorView('canvas')}>{icon('spatial_gallery',15)}</button>
         <button type="button" className={`floor-view-option ${floorView==='grid'?'on':''}`} aria-pressed={floorView==='grid'} aria-label="Grid view" title="Grid view" onClick={()=>setFloorView('grid')}>{icon('grid_view',15)}</button>
       </div>
       <div className={`console-main ${floorView==='grid'?'grid-only':''}`}>
