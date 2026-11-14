@@ -97,8 +97,8 @@ export function SettingsEditor() {
       <style jsx global>{`
         .settings-editor{color:#f2efe5}
         .settings-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.settings-heading h1{margin:6px 0;font:500 clamp(1.625rem,4vw,2.25rem)/1.1 var(--font-playfair),Georgia,serif;letter-spacing:-.025em}.settings-heading>div>p:last-child{margin:8px 0 0;color:#aeb8ab;font-size:0.8125rem;line-height:1.6}
-        .settings-state{padding:8px 11px;border:1px solid #4b5548;border-radius:999px;color:#c6cfbf;font-size:0.625rem;white-space:nowrap}.settings-state[data-status="saved"]{border-color:#3f5a45;color:#9dd3a8}.settings-state[data-status="error"]{border-color:#5f3d36;color:#e07d72}
-        .settings-note{color:#9eaa9d;font-size:0.75rem}.settings-error{color:#ffb7aa;font-size:0.6875rem;margin:0 0 12px}
+        .settings-state{padding:8px 11px;border:1px solid #4b5548;border-radius:999px;color:#c6cfbf;font-size:0.625rem;white-space:nowrap}.settings-state[data-status="saved"]{border-color:#3f5a45;color:var(--service-green)}.settings-state[data-status="error"]{border-color:#5f3d36;color:var(--terracotta-salmon)}
+        .settings-note{color:#9eaa9d;font-size:0.75rem}.settings-error{color:var(--terracotta-salmon);font-size:0.6875rem;margin:0 0 12px}
         .settings-tabs{display:flex;gap:8px;margin:0 0 20px;flex-wrap:wrap}.settings-tabs button{min-height:38px;padding:0 15px;border:1px solid #465044;border-radius:999px;background:transparent;color:#c5cdbf;font:600 0.6875rem inherit;cursor:pointer}.settings-tabs button:hover{border-color:var(--restaurant-primary,#d7b46a);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 42%,white)}.settings-tabs button.active{border-color:var(--restaurant-primary,#d7b46a);color:var(--restaurant-primary,#d7b46a);background:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 10%,transparent)}.settings-tabs button:focus-visible{outline:2px solid color-mix(in srgb,var(--restaurant-primary,#d7b46a) 76%,white)}
         @media(max-width:540px){.settings-heading{align-items:flex-start;flex-direction:column}}
       `}</style>

@@ -112,6 +112,10 @@ body {
 :root {
   --focus-ring: color-mix(in srgb, color-mix(in srgb, var(--restaurant-primary, #d7b46a) 97%, black) 16%, transparent);
   --z-backdrop: 20;
+  /* Semantic status colors from .impeccable/design.json — the only sanctioned
+     success/error tints. Components reference these instead of inventing hexes. */
+  --service-green: #72bd8d;
+  --terracotta-salmon: #e07d72;
 }
 
 /* Placeholder text: quiet sage, 4.5:1+ on input surfaces; opacity 1 defeats UA dimming. */

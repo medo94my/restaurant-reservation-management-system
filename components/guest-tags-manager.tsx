@@ -10,6 +10,7 @@ type Props = {
   visitTiers: VisitTier[]
   occasionTags: OccasionTag[]
   onCustomersChange: (customers: CustomerProfile[]) => void
+  onDeleteCustomer: (phone: string) => Promise<void>
   saveStatus?: 'idle' | 'saved' | 'saving' | 'error'
 }
 
@@ -19,7 +20,7 @@ function getTier(visits: number, tiers: VisitTier[]) {
 
 type DrawerMode = { mode: 'create' } | { mode: 'edit'; original: CustomerProfile } | null
 
-export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, occasionTags, onCustomersChange, saveStatus = 'idle' }: Props) {
+export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, occasionTags, onCustomersChange, onDeleteCustomer, saveStatus = 'idle' }: Props) {
   const [search, setSearch] = useState('')
   const [tierFilter, setTierFilter] = useState('all')
   const [tagFilter, setTagFilter] = useState('all')
@@ -163,7 +164,9 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
         setDeleteError(typeof result?.error === 'string' ? result.error : 'Unable to verify the passcode.')
         return
       }
-      onCustomersChange(customers.filter((customer) => customer.phone !== deleteTarget.phone))
+      // The parent saves the delete to the server immediately (not via the
+      // debounced config save) so closing the tab cannot silently lose it.
+      await onDeleteCustomer(deleteTarget.phone)
       setNotice(`Deleted ${deleteTarget.name}’s profile.`)
       closeConfirm()
     } catch {
@@ -355,7 +358,7 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
         .manager-action-primary{min-height:44px;padding:0 16px;border-color:var(--restaurant-primary,#d7b46a);background:var(--restaurant-primary,#d7b46a);color:#241d0c}
         .manager-action-secondary:hover{border-color:var(--restaurant-primary,#d7b46a);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 42%,white)}
         .manager-action-primary:disabled,.manager-action-secondary:disabled,.guest-danger:disabled{opacity:.55;cursor:wait}
-        .guest-danger{border-color:#5f3d36;background:transparent;color:#e07d72}.guest-danger:hover{border-color:#e07d72;color:#f0a99e}
+        .guest-danger{border-color:#5f3d36;background:transparent;color:var(--terracotta-salmon)}.guest-danger:hover{border-color:var(--terracotta-salmon);color:#f0a99e}
         .manager-action-primary:focus-visible,.manager-action-secondary:focus-visible,.guest-danger:focus-visible,.guest-tag-option:focus-visible,.guest-filter:focus-visible,.guest-search-clear:focus-visible{outline:2px solid color-mix(in srgb,var(--restaurant-primary,#d7b46a) 76%,white);outline-offset:2px}
         /* Toolbar */
         .guest-toolbar{display:flex;align-items:center;gap:11px;margin:18px 0 6px;flex-wrap:wrap}
@@ -372,10 +375,10 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
         .guest-count{margin-left:auto;font-size:0.6875rem;color:#9ba198;white-space:nowrap}
         .guest-save-state{font-size:0.6875rem;white-space:nowrap}
         .guest-save-state[data-status="saving"]{color:#9ba198}
-        .guest-save-state[data-status="saved"]{color:#9dd3a8}
-        .guest-save-state[data-status="error"]{color:#ffb7aa}
+        .guest-save-state[data-status="saved"]{color:var(--service-green)}
+        .guest-save-state[data-status="error"]{color:var(--terracotta-salmon)}
         .guest-notice,.guest-error{margin:10px 0 0;font-size:0.6875rem;line-height:1.5}
-        .guest-notice{color:#9dd3a8}.guest-error{color:#ffb7aa}
+        .guest-notice{color:var(--service-green)}.guest-error{color:var(--terracotta-salmon)}
         /* Table */
         .guest-table-wrap{overflow-x:auto}
         .guest-table{width:100%;border-collapse:collapse;font-size:0.8125rem}
@@ -421,7 +424,7 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
         .guest-drawer-form textarea{resize:vertical;min-height:88px}
         .guest-drawer-form input:focus,.guest-drawer-form textarea:focus{outline:none;border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}
         .guest-drawer-form small{color:#9daa9a;font-size:0.625rem;font-weight:400}
-        .guest-drawer-error{margin:0;font-size:0.6875rem;color:#ffb7aa}
+        .guest-drawer-error{margin:0;font-size:0.6875rem;color:var(--terracotta-salmon)}
         .guest-drawer-tags{display:flex;gap:8px;flex-wrap:wrap}
         .guest-tag-option{border:1px solid #454c45;border-radius:999px;background:#202622;color:#abb2a8;padding:6px 11px;font-size:0.6875rem;font-weight:700;cursor:pointer;transition:.15s ease}
         .guest-tag-option:hover{border-color:color-mix(in srgb,var(--tag-color) 45%,transparent)}
