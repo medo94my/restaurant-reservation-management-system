@@ -7,3 +7,4 @@ tsconfig.tsbuildinfo
 !.env.example
 *.tsbuildinfo
 .DS_Store
+.codex/

@@ -116,6 +116,10 @@ body {
      success/error tints. Components reference these instead of inventing hexes. */
   --service-green: #72bd8d;
   --terracotta-salmon: #e07d72;
+  /* Service-state colors (floor unit cards) */
+  --service-violet: #a7a9ee;
+  --service-amber: #ecc66c;
+  --service-neutral: #9da39d;
 }
 
 /* Placeholder text: quiet sage, 4.5:1+ on input surfaces; opacity 1 defeats UA dimming. */
