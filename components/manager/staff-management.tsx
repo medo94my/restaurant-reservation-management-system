@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import useSWR from 'swr'
+import { TableCollapseStyles } from '@/components/manager/table-collapse-styles'
 
 type StaffMember = { id: string; staffId: string; name: string; role: 'manager' | 'hostess'; active: boolean; createdAt: string }
 type StaffResponse = { staff: StaffMember[] }
@@ -144,7 +145,7 @@ export function StaffManagement() {
         {!isLoading && data?.staff.length === 0 && <p className="staff-state">No staff accounts yet. Add your first teammate.</p>}
         {data && data.staff.length > 0 && (
           <div className="staff-table-wrap">
-            <table className="staff-table">
+            <table className="staff-table roster-table">
               <thead>
                 <tr><th scope="col">Staff member</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Added</th><th scope="col" className="staff-th-actions">Actions</th></tr>
               </thead>
@@ -204,6 +205,7 @@ export function StaffManagement() {
           </div>
         </aside>
       )}
+      <TableCollapseStyles />
       <style jsx global>{`
         .staff-admin{color:#f2efe5}.staff-admin-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 18px}.staff-admin-heading h1{margin:6px 0;font:500 clamp(1.5625rem,4vw,2.25rem)/1.1 var(--font-playfair),Georgia,serif;letter-spacing:-.025em}.staff-admin-heading>div>p:last-child{margin:9px 0 0;color:#aeb8ab;font-size:0.8125rem;line-height:1.6;max-width:560px}.manager-eyebrow{margin:0;color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 93%,black);font-size:0.625rem;font-weight:700;letter-spacing:.16em}
         .staff-admin-actions{display:flex;align-items:center;gap:12px;flex:0 0 auto}.staff-count{padding:9px 12px;border:1px solid #465044;border-radius:999px;color:#c5cdbf;font-size:0.6875rem;white-space:nowrap}
@@ -219,7 +221,7 @@ export function StaffManagement() {
         .staff-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.staff-drawer-head h2{margin:6px 0 0;font:500 1.375rem var(--font-playfair),Georgia,serif;letter-spacing:-.02em}.staff-drawer-close{flex:0 0 auto;min-height:34px;min-width:34px;border:1px solid #485447;border-radius:8px;background:#242c24;color:#e8e5da;font:600 0.9375rem/1 inherit;cursor:pointer}.staff-drawer-close:hover{border-color:var(--restaurant-primary,#d7b46a);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 42%,white)}.staff-drawer-note{margin:14px 0 0;color:#9daa9a;font-size:0.75rem;line-height:1.55}.staff-drawer-error{margin:0;font-size:0.6875rem;color:var(--terracotta-salmon)}
         .staff-create-form{display:grid;gap:15px;margin-top:18px}.staff-create-form label{display:grid;gap:7px;color:#e8e6dc;font-size:0.6875rem;font-weight:600}.staff-create-form input,.staff-create-form select{min-height:42px;width:100%;padding:0 11px;border:1px solid #4a554b;border-radius:8px;background:#141a15;color:#f4f1e8;font:inherit}.staff-create-form input:focus,.staff-create-form select:focus{outline:none;border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}.staff-create-form small{color:#9daa9a;font-size:0.625rem;font-weight:400}
         @media(prefers-reduced-motion:reduce){.staff-drawer{animation:none}}
-        @media(max-width:860px){.staff-admin-heading{align-items:flex-start;flex-direction:column}.staff-table-card{padding:17px}.staff-table thead{display:none}.staff-table tbody tr{display:grid;gap:12px;padding:16px 0;border-bottom:1px solid #2b322b}.staff-table tbody tr:last-child{border-bottom:0}.staff-table tbody tr:hover{background:transparent}.staff-table td{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center;gap:0 12px;padding:0;border:0}.staff-table td::before{content:attr(data-label);color:#9ba198;font-size:0.625rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.staff-cell-actions{display:grid;grid-template-columns:88px auto auto;justify-content:start;gap:8px 12px}.staff-drawer{width:100%;border-left:0}}
+        @media(max-width:860px){.staff-admin-heading{align-items:flex-start;flex-direction:column}.staff-table-card{padding:17px}.staff-cell-actions{display:grid;grid-template-columns:88px auto auto;justify-content:start;gap:8px 12px}.staff-drawer{width:100%;border-left:0}}
         @media(max-width:600px){.staff-create-form{margin-top:14px}}
       `}</style>
     </main>

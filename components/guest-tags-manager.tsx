@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { CustomerProfile, OccasionTag, VisitTier } from '@/lib/restaurant-config'
+import { TableCollapseStyles } from '@/components/manager/table-collapse-styles'
 
 type Props = {
   customers: CustomerProfile[]
@@ -227,7 +228,7 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
         {listError && <p className="guest-error" role="alert">{listError}</p>}
 
         <div className="guest-table-wrap">
-          <table className="guest-table">
+          <table className="guest-table roster-table">
             <thead>
               <tr><th scope="col">Guest</th><th scope="col">Lifetime visits</th><th scope="col">Tier</th><th scope="col">Tags</th><th scope="col">Note</th><th scope="col" className="guest-th-actions">Actions</th></tr>
             </thead>
@@ -346,6 +347,7 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
         </div>
       )}
 
+      <TableCollapseStyles />
       <style jsx global>{`
         /* Card — mirrors the staff roster card spec */
         .guest-manager{margin-bottom:20px}.guest-panel{padding:22px;border:1px solid #3b453b;border-radius:16px;background:linear-gradient(145deg,#1d251e,#171d18)}
@@ -438,7 +440,7 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
         .guest-confirm-actions{display:flex;gap:9px;justify-content:flex-end;margin-top:20px}
         @media(prefers-reduced-motion:reduce){.guest-drawer,.guest-confirm-inner{animation:none}.guest-table tbody tr{transition:none}}
         /* Mobile — mirrors the staff table collapse */
-        @media(max-width:860px){.guest-panel{padding:17px}.guest-panel-heading{align-items:flex-start;flex-direction:column;gap:13px}.guest-search{min-width:100%}.guest-count{margin-left:0}.guest-table thead{display:none}.guest-table tbody tr{display:grid;gap:12px;padding:16px 0;border-bottom:1px solid #2b322b}.guest-table tbody tr:last-child{border-bottom:0}.guest-table tbody tr:hover{background:transparent}.guest-table td{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center;gap:0 12px;padding:0;border:0}.guest-table td::before{content:attr(data-label);color:#9ba198;font-size:0.625rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.guest-empty-cell{display:block;text-align:left;padding:0}.guest-empty-cell::before{content:none}.guest-empty-tile{margin:0}.guest-cell-actions{display:flex;justify-content:flex-start;gap:8px}.guest-cell-note span{white-space:normal}}
+        @media(max-width:860px){.guest-panel{padding:17px}.guest-panel-heading{align-items:flex-start;flex-direction:column;gap:13px}.guest-search{min-width:100%}.guest-count{margin-left:0}.guest-empty-cell{display:block;text-align:left;padding:0}.guest-empty-cell::before{content:none}.guest-empty-tile{margin:0}.guest-cell-actions{display:flex;justify-content:flex-start;gap:8px}.guest-cell-note span{white-space:normal}}
       `}</style>
     </div>
   )
