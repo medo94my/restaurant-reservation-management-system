@@ -69,6 +69,13 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
     return true
   }), [customers, monthlyVisitsByPhone, search, tagFilter, tierFilter, visitTiers])
 
+  const filtersActive = search.trim() !== '' || tierFilter !== 'all' || tagFilter !== 'all'
+  const clearFilters = () => {
+    setSearch('')
+    setTierFilter('all')
+    setTagFilter('all')
+  }
+
   const openCreate = () => {
     setDrawer({ mode: 'create' })
     setFormName('')
@@ -169,15 +176,33 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
     ? getTier(monthlyVisitsByPhone[drawer.original.phone] ?? 0, visitTiers)
     : null
 
+  const tierPillStyle = (color: string | undefined): CSSProperties => {
+    const ink = color ?? '#9ba198'
+    return { color: ink, borderColor: `${ink}66`, background: `${ink}14` }
+  }
+
   return (
     <div className="guest-manager">
       <section className="guest-panel profiles-panel">
         <div className="guest-panel-heading profiles-heading">
-          <div><span className="guest-kicker">Guest book</span><h2>Guest profiles</h2><p>A registry of everyone who books. New reservations register their guests here automatically; profiles stay read-only until you open one.</p></div>
-          <button className="guest-button" type="button" onClick={openCreate}>Add guest</button>
+          <div>
+            <p className="manager-eyebrow">GUEST BOOK</p>
+            <h2>Guest profiles</h2>
+            <p className="guest-lede">Everyone who books registers here automatically. Profiles stay read-only until you open one.</p>
+          </div>
+          <button className="manager-action-primary" type="button" onClick={openCreate}>Add guest</button>
         </div>
+
         <div className="guest-toolbar">
-          <label className="guest-search"><span className="sr-only">Search guests by name or phone</span><input value={search} placeholder="Search name or phone" onChange={(event) => setSearch(event.target.value)} /></label>
+          <label className="guest-search">
+            <span className="material-symbols-outlined" aria-hidden="true">search</span>
+            <input aria-label="Search guests by name or phone" value={search} placeholder="Search name or phone" onChange={(event) => setSearch(event.target.value)} />
+            {search !== '' && (
+              <button type="button" className="guest-search-clear" onClick={() => setSearch('')} aria-label="Clear search">
+                <span className="material-symbols-outlined" aria-hidden="true">close</span>
+              </button>
+            )}
+          </label>
           <select className="guest-filter" aria-label="Filter by tier" value={tierFilter} onChange={(event) => setTierFilter(event.target.value)}>
             <option value="all">All tiers</option>
             {visitTiers.map((tier) => <option key={tier.id} value={tier.id}>{tier.label}</option>)}
@@ -186,10 +211,12 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
             <option value="all">All tags</option>
             {occasionTags.map((tag) => <option key={tag.id} value={tag.id}>{tag.label}</option>)}
           </select>
-          <span className="guest-count">{filteredCustomers.length} of {customers.length}</span>
+          <span className="guest-count">{filteredCustomers.length} of {customers.length} guests</span>
         </div>
+
         {notice && <p className="guest-notice" role="status">{notice}</p>}
         {listError && <p className="guest-error" role="alert">{listError}</p>}
+
         <div className="guest-table-wrap">
           <table className="guest-table">
             <thead>
@@ -204,11 +231,11 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
                     <td data-label="Guest">
                       <div className="guest-identity">
                         <span className="guest-avatar" aria-hidden="true">{customer.name.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span>
-                        <span><strong>{customer.name}</strong><small>{customer.phone}</small></span>
+                        <span className="guest-identity-text"><strong>{customer.name}</strong><span className="guest-identity-sub">{customer.phone}</span></span>
                       </div>
                     </td>
                     <td data-label="Visits" className="guest-cell-visits">{customer.visits}</td>
-                    <td data-label="Tier"><span className="guest-tier" title={`${monthlyVisits} completed visits this month`} style={{ color: tier?.color, borderColor: `${tier?.color}66`, background: `${tier?.color}14` }}>{tier?.label ?? 'New'}</span></td>
+                    <td data-label="Tier"><span className="guest-tier" title={`${monthlyVisits} completed visits this month`} style={tierPillStyle(tier?.color)}>{tier?.label ?? 'New'}</span></td>
                     <td data-label="Tags">
                       <div className="guest-tags" aria-label={`${customer.name} occasion tags`}>
                         {customer.occasionTags.length === 0 && <span className="guest-muted">—</span>}
@@ -221,13 +248,26 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
                     </td>
                     <td data-label="Note" className="guest-cell-note"><span title={customer.note || undefined}>{customer.note || '—'}</span></td>
                     <td data-label="Actions" className="guest-cell-actions">
-                      <button type="button" className="guest-action-secondary" onClick={() => openEdit(customer)}>Update</button>
+                      <button type="button" className="manager-action-secondary" onClick={() => openEdit(customer)}>Edit</button>
                       <button type="button" className="guest-danger" onClick={() => openDelete(customer)}>Delete</button>
                     </td>
                   </tr>
                 )
               })}
-              {filteredCustomers.length === 0 && <tr><td colSpan={6} className="guest-empty-cell">{customers.length === 0 ? 'No guests yet. They register here automatically with their first booking, or add one above.' : 'No guests match your search or filters.'}</td></tr>}
+              {filteredCustomers.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="guest-empty-cell">
+                    <span className="guest-empty-tile"><span className="material-symbols-outlined" aria-hidden="true">{customers.length === 0 ? 'group' : 'person_search'}</span></span>
+                    <strong>{customers.length === 0 ? 'No guests yet' : 'No guests match'}</strong>
+                    <p>{customers.length === 0
+                      ? 'Guests register here automatically with their first booking. You can also add one by hand.'
+                      : 'Try a different name, phone number, tier, or tag.'}</p>
+                    {filtersActive && customers.length > 0 && (
+                      <button type="button" className="manager-action-secondary" onClick={clearFilters}>Clear filters</button>
+                    )}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -239,9 +279,14 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
           <div ref={drawerRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={drawer.mode === 'create' ? 'New guest profile' : `${drawer.original.name}’s profile`} className="guest-drawer-inner">
             <header className="guest-drawer-head">
               <div>
-                <p className="manager-eyebrow">{drawer.mode === 'create' ? 'GUEST BOOK' : 'GUEST PROFILE'}</p>
+                <p className="manager-eyebrow">{drawer.mode === 'create' ? 'NEW GUEST' : 'GUEST PROFILE'}</p>
                 <h2>{drawer.mode === 'create' ? 'New guest profile' : drawer.original.name}</h2>
-                {drawer.mode === 'edit' && <p className="guest-drawer-sub">{editTier && <span className="guest-tier" style={{ color: editTier.color, borderColor: `${editTier.color}66`, background: `${editTier.color}14` }}>{editTier.label}</span>}<span>{monthlyVisitsByPhone[drawer.original.phone] ?? 0} completed visits this month</span></p>}
+                {drawer.mode === 'edit' && (
+                  <p className="guest-drawer-sub">
+                    {editTier && <span className="guest-tier" style={tierPillStyle(editTier.color)}>{editTier.label}</span>}
+                    <span>{monthlyVisitsByPhone[drawer.original.phone] ?? 0} completed visits this month</span>
+                  </p>
+                )}
               </div>
               <button type="button" className="guest-drawer-close" onClick={closeDrawer} aria-label="Close">✕</button>
             </header>
@@ -265,7 +310,7 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
                 {occasionTags.length === 0 && <span className="guest-muted">Create tags in Settings first.</span>}
               </div>
               {formError && <p className="guest-drawer-error" role="alert">{formError}</p>}
-              <button className="guest-button" disabled={busy}>{busy ? 'Saving…' : drawer.mode === 'create' ? 'Create profile' : 'Save changes'}</button>
+              <button className="manager-action-primary" disabled={busy}>{busy ? 'Saving…' : drawer.mode === 'create' ? 'Create profile' : 'Save changes'}</button>
             </form>
           </div>
         </aside>
@@ -284,7 +329,7 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
               <label>Manager passcode<input required type="password" autoComplete="current-password" autoFocus value={passcode} onChange={(event) => setPasscode(event.target.value)} /><small>Enter your own passcode to confirm this deletion.</small></label>
               {deleteError && <p className="guest-drawer-error" role="alert">{deleteError}</p>}
               <div className="guest-confirm-actions">
-                <button type="button" className="guest-action-secondary" onClick={closeConfirm}>Cancel</button>
+                <button type="button" className="manager-action-secondary" onClick={closeConfirm}>Cancel</button>
                 <button className="guest-danger" disabled={busy}>{busy ? 'Verifying…' : 'Delete profile'}</button>
               </div>
             </form>
@@ -293,26 +338,94 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
       )}
 
       <style jsx global>{`
-        .guest-manager{margin-bottom:20px}.guest-panel{border:1px solid #353d35;background:linear-gradient(150deg,#202521,#191d1a);border-radius:14px;padding:18px}.guest-panel-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.guest-kicker{font-size:0.625rem;color:var(--restaurant-primary,#d6b66f);text-transform:uppercase;letter-spacing:.15em}.guest-panel h2{font:500 1.25rem var(--font-playfair),Georgia,serif;color:#eee9df;margin:6px 0}.guest-panel-heading p{font-size:0.6875rem;color:#9ca397;line-height:1.6;margin:0;max-width:600px}
-        .profiles-heading{align-items:center}
-        .guest-button,.guest-action-secondary,.guest-danger{min-height:39px;padding:0 14px;border-radius:8px;font:700 0.6875rem inherit;white-space:nowrap;cursor:pointer}.guest-button{border:1px solid #8a7547;background:var(--restaurant-primary,#d7b46a);color:#241e11}.guest-button:hover{background:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 76%,white)}.guest-button:disabled{opacity:.45;cursor:not-allowed}.guest-action-secondary{border:1px solid #485447;background:#242c24;color:#e8e5da}.guest-action-secondary:hover{border-color:var(--restaurant-primary,#d7b46a);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 42%,white)}.guest-danger{border:1px solid #5f3d36;background:transparent;color:#e07d72}.guest-danger:hover{border-color:#e07d72;color:#f0a99e}.guest-button:focus-visible,.guest-action-secondary:focus-visible,.guest-danger:focus-visible,.guest-tag-option:focus-visible,.guest-filter:focus-visible{outline:2px solid color-mix(in srgb,var(--restaurant-primary,#d7b46a) 76%,white)}
-        .guest-toolbar{display:flex;align-items:center;gap:9px;margin:14px 0 4px;flex-wrap:wrap}.guest-search{flex:1;min-width:180px}.guest-search input{width:100%;height:39px;border:1px solid #414840;border-radius:8px;background:#141916;color:#eee9df;padding:0 11px;font:inherit;font-size:0.6875rem;min-width:0}.guest-filter{height:39px;border:1px solid #414840;border-radius:8px;background:#141916;color:#eee9df;padding:0 9px;font:inherit;font-size:0.6875rem;cursor:pointer}.guest-count{font-size:0.625rem;color:#d5bf7c;border:1px solid #655738;background:#2e2a1f;padding:8px 10px;border-radius:20px;white-space:nowrap}
-        .guest-notice{font-size:0.6875rem;color:#9dd3a8;margin:10px 0 0}.guest-error{font-size:0.625rem;color:#ed9c91;margin:8px 0}
-        .guest-search input:focus,.guest-filter:focus,.guest-drawer-form input:focus,.guest-drawer-form textarea:focus{outline:none;box-shadow:0 0 0 3px var(--focus-ring);border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}
-        .guest-table-wrap{overflow-x:auto}.guest-table{width:100%;border-collapse:collapse;font-size:0.8125rem}.guest-table th{padding:2px 12px 11px;border-bottom:1px solid #3b453b;color:#9ba198;font-size:0.625rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;text-align:left;white-space:nowrap}.guest-table th.guest-th-actions,.guest-table td.guest-cell-actions{text-align:right}.guest-table td{padding:13px 12px;border-bottom:1px solid #2b322b;vertical-align:middle}.guest-table tbody tr:hover{background:#1c241e}.guest-empty-cell{text-align:center;color:#9eaa9d;font-size:0.75rem;padding:24px 12px}
-        .guest-identity{display:flex;align-items:center;gap:9px;min-width:0}.guest-identity>span:last-child{display:flex;flex-direction:column;gap:4px;min-width:0}.guest-identity strong{font-size:0.75rem;color:#ece9e0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.guest-identity small{font-size:0.625rem;color:#929a90}.guest-avatar{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border:1px solid #6d5a35;border-radius:10px;background:#393222;color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 86%,white);font-size:0.625rem;font-weight:700}
-        .guest-cell-visits{font-variant-numeric:tabular-nums;color:#e8e5da}.guest-tier{display:inline-flex;align-items:center;gap:6px;border:1px solid;border-radius:20px;padding:6px 9px;font-size:0.625rem;font-weight:600;justify-content:center;white-space:nowrap}
-        .guest-tags{display:flex;gap:6px;flex-wrap:wrap;max-width:300px}.guest-tag-chip{display:inline-flex;align-items:center;border:1px solid color-mix(in srgb,var(--tag-color) 55%,transparent);border-radius:20px;padding:5px 9px;font-size:0.625rem;font-weight:600;color:var(--tag-color);background:color-mix(in srgb,var(--tag-color) 12%,transparent)}.guest-muted{color:#8b948a;font-size:0.6875rem}.guest-cell-note{max-width:260px}.guest-cell-note span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#b9c0b4;font-size:0.75rem}
-        .guest-cell-actions{white-space:nowrap}.guest-cell-actions .guest-action-secondary,.guest-cell-actions .guest-danger{min-height:34px;padding:0 11px}
-        .drawer-backdrop{position:fixed;inset:0;background:#080a09c9;z-index:var(--z-backdrop);backdrop-filter:blur(3px)}.guest-drawer{position:fixed;top:0;right:0;bottom:0;z-index:calc(var(--z-backdrop) + 1);width:min(460px,100%);padding:22px;border-left:1px solid #3b453b;background:linear-gradient(145deg,#1d251e,#171d18);color:#f2efe5;overflow-y:auto;animation:guest-drawer-in .22s ease}@keyframes guest-drawer-in{from{transform:translateX(28px);opacity:0}to{transform:translateX(0);opacity:1}}.guest-drawer-inner{outline:none}
-        .guest-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.guest-drawer-head h2{margin:6px 0 0;font:500 1.375rem var(--font-playfair),Georgia,serif;letter-spacing:-.02em}.guest-drawer-sub{display:flex;align-items:center;gap:9px;margin:10px 0 0;color:#9daa9a;font-size:0.6875rem}.guest-drawer-close{flex:0 0 auto;min-height:34px;min-width:34px;border:1px solid #485447;border-radius:8px;background:#242c24;color:#e8e5da;font:600 0.9375rem/1 inherit;cursor:pointer}.guest-drawer-close:hover{border-color:var(--restaurant-primary,#d7b46a);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 42%,white)}
-        .guest-drawer-form{display:grid;gap:14px;margin-top:18px}.guest-drawer-form label{display:grid;gap:7px;color:#e8e6dc;font-size:0.6875rem;font-weight:600}.guest-drawer-form input,.guest-drawer-form textarea{width:100%;padding:9px 11px;border:1px solid #4a554b;border-radius:8px;background:#141a15;color:#f4f1e8;font:inherit;font-size:0.75rem}.guest-drawer-form textarea{resize:vertical;min-height:70px}.guest-drawer-form small{color:#9daa9a;font-size:0.625rem;font-weight:400}.guest-drawer-error{margin:0;font-size:0.6875rem;color:#ffb7aa}
-        .guest-drawer-tags{display:flex;gap:6px;flex-wrap:wrap}.guest-tag-option{border:1px solid #454c45;border-radius:20px;background:#202622;color:#abb2a8;padding:5px 8px;font-size:0.625rem;cursor:pointer}.guest-tag-option.active{color:var(--tag-color);border-color:color-mix(in srgb,var(--tag-color) 65%,transparent);background:color-mix(in srgb,var(--tag-color) 12%,transparent)}
-        .guest-confirm-card{position:fixed;inset:0;z-index:calc(var(--z-backdrop) + 1);display:grid;place-items:center;padding:18px;pointer-events:none}.guest-confirm-inner{pointer-events:auto;width:min(430px,100%);padding:22px;border:1px solid #3b453b;border-radius:16px;background:linear-gradient(145deg,#1d251e,#171d18);color:#f2efe5;box-shadow:var(--modal-veil,0 24px 90px #0009);outline:none;animation:guest-confirm-in .18s ease}@keyframes guest-confirm-in{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
-        .guest-confirm-text{margin:14px 0 0;color:#aeb8ab;font-size:0.75rem;line-height:1.6}.guest-confirm-text strong{color:#f4f1e8}.guest-confirm-actions{display:flex;gap:10px;justify-content:flex-end}
-        @media(prefers-reduced-motion:reduce){.guest-drawer,.guest-confirm-inner{animation:none}}
-        @media(max-width:860px){.guest-panel{padding:17px}.guest-table thead{display:none}.guest-table tbody tr{display:grid;gap:12px;padding:16px 0;border-bottom:1px solid #2b322b}.guest-table tbody tr:last-child{border-bottom:0}.guest-table tbody tr:hover{background:transparent}.guest-table td{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center;gap:0 12px;padding:0;border:0}.guest-table td::before{content:attr(data-label);color:#9ba198;font-size:0.625rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.guest-empty-cell{display:block;text-align:left;padding:0}.guest-empty-cell::before{content:none}.guest-cell-actions{display:flex;justify-content:flex-start;gap:8px}.guest-cell-note span{white-space:normal}}
-        @media(max-width:560px){.guest-panel{padding:13px}.guest-panel-heading{align-items:flex-start;flex-direction:column;gap:9px}.guest-search{min-width:100%}.guest-identity strong{font-size:0.6875rem}}
+        /* Card — mirrors the staff roster card spec */
+        .guest-manager{margin-bottom:20px}.guest-panel{padding:22px;border:1px solid #3b453b;border-radius:16px;background:linear-gradient(145deg,#1d251e,#171d18)}
+        .guest-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
+        .manager-eyebrow{margin:0;color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 93%,black);font-size:0.625rem;font-weight:700;letter-spacing:.16em}
+        .guest-panel h2{margin:6px 0 0;font:500 1.375rem var(--font-playfair),Georgia,serif;letter-spacing:-.02em;color:#f2efe5}
+        .guest-lede{margin:9px 0 0;color:#9daa9a;font-size:0.75rem;line-height:1.6;max-width:560px}
+        /* Buttons — shared manager vocabulary */
+        .manager-action-primary,.manager-action-secondary,.guest-danger{min-height:38px;padding:0 12px;border:1px solid #485447;border-radius:8px;background:#242c24;color:#e8e5da;font:600 0.6875rem inherit;cursor:pointer;white-space:nowrap}
+        .manager-action-primary{min-height:44px;padding:0 16px;border-color:var(--restaurant-primary,#d7b46a);background:var(--restaurant-primary,#d7b46a);color:#241d0c}
+        .manager-action-secondary:hover{border-color:var(--restaurant-primary,#d7b46a);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 42%,white)}
+        .manager-action-primary:disabled,.manager-action-secondary:disabled,.guest-danger:disabled{opacity:.55;cursor:wait}
+        .guest-danger{border-color:#5f3d36;background:transparent;color:#e07d72}.guest-danger:hover{border-color:#e07d72;color:#f0a99e}
+        .manager-action-primary:focus-visible,.manager-action-secondary:focus-visible,.guest-danger:focus-visible,.guest-tag-option:focus-visible,.guest-filter:focus-visible,.guest-search-clear:focus-visible{outline:2px solid color-mix(in srgb,var(--restaurant-primary,#d7b46a) 76%,white);outline-offset:2px}
+        /* Toolbar */
+        .guest-toolbar{display:flex;align-items:center;gap:11px;margin:18px 0 6px;flex-wrap:wrap}
+        .guest-search{position:relative;flex:1;min-width:220px;display:block}
+        .guest-search .material-symbols-outlined{position:absolute;left:12px;top:50%;translate:0 -50%;font-size:17px;color:#9ba198;pointer-events:none}
+        .guest-search input{width:100%;min-height:42px;border:1px solid #4a554b;border-radius:8px;background:#141a15;color:#f4f1e8;padding:0 34px 0 37px;font:inherit;font-size:0.75rem}
+        .guest-search input::placeholder{color:#8d958b}
+        .guest-search input:focus{outline:none;box-shadow:0 0 0 3px var(--focus-ring);border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}
+        .guest-search-clear{position:absolute;right:7px;top:50%;translate:0 -50%;width:26px;height:26px;display:grid;place-items:center;border:0;border-radius:6px;background:transparent;color:#9ba198;cursor:pointer}
+        .guest-search-clear:hover{color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 55%,white)}
+        .guest-search-clear .material-symbols-outlined{font-size:15px;position:static;translate:none}
+        .guest-filter{min-height:42px;min-width:136px;padding:0 11px;border:1px solid #4a554b;border-radius:8px;background:#141a15;color:#f4f1e8;font:inherit;font-size:0.75rem;cursor:pointer}
+        .guest-filter:focus{outline:none;box-shadow:0 0 0 3px var(--focus-ring);border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}
+        .guest-count{margin-left:auto;font-size:0.6875rem;color:#9ba198;white-space:nowrap}
+        .guest-notice,.guest-error{margin:10px 0 0;font-size:0.6875rem;line-height:1.5}
+        .guest-notice{color:#9dd3a8}.guest-error{color:#ffb7aa}
+        /* Table */
+        .guest-table-wrap{overflow-x:auto}
+        .guest-table{width:100%;border-collapse:collapse;font-size:0.8125rem}
+        .guest-table th{padding:2px 12px 11px;border-bottom:1px solid #3b453b;color:#9ba198;font-size:0.625rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;text-align:left;white-space:nowrap}
+        .guest-table th.guest-th-actions{text-align:right}
+        .guest-table td{padding:14px 12px;border-bottom:1px solid #2b322b;vertical-align:middle}
+        .guest-table tbody tr{transition:background-color .15s ease}
+        .guest-table tbody tr:hover{background:#1c241e}
+        .guest-identity{display:flex;align-items:center;gap:11px;min-width:0}
+        .guest-avatar{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--restaurant-primary,#d7b46a) 40%,transparent);border-radius:9px;background:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 9%,transparent);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 92%,white);font-size:0.6875rem;font-weight:700}
+        .guest-identity-text{display:block;min-width:0}
+        .guest-identity-text strong{display:block;font-size:0.875rem;color:#f4f1e8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .guest-identity-sub{display:block;margin-top:3px;color:#9daa9a;font-size:0.6875rem;font-variant-numeric:tabular-nums}
+        .guest-cell-visits{font-variant-numeric:tabular-nums;font-weight:600;font-size:0.875rem;color:#e8e5da}
+        .guest-tier{display:inline-flex;align-items:center;border:1px solid;border-radius:999px;padding:5px 10px;font-size:0.625rem;font-weight:700;white-space:nowrap}
+        .guest-tags{display:flex;gap:6px;flex-wrap:wrap;max-width:240px}
+        .guest-tag-chip{display:inline-flex;align-items:center;border:1px solid color-mix(in srgb,var(--tag-color) 55%,transparent);border-radius:999px;padding:4px 9px;font-size:0.625rem;font-weight:700;color:var(--tag-color);background:color-mix(in srgb,var(--tag-color) 12%,transparent)}
+        .guest-muted{color:#8b948a;font-size:0.6875rem}
+        .guest-cell-note{max-width:260px}
+        .guest-cell-note span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#b9c0b4;font-size:0.75rem}
+        .guest-cell-actions{display:flex;justify-content:flex-end;gap:8px;white-space:nowrap}
+        .guest-cell-actions .manager-action-secondary,.guest-cell-actions .guest-danger{min-height:34px;padding:0 11px}
+        /* Empty states */
+        .guest-empty-cell{padding:34px 16px 30px;text-align:center}
+        .guest-empty-tile{width:44px;height:44px;margin:0 auto;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--restaurant-primary,#d7b46a) 42%,transparent);border-radius:11px;background:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 9%,transparent);color:var(--restaurant-primary,#d7b46a)}
+        .guest-empty-tile .material-symbols-outlined{font-size:20px}
+        .guest-empty-cell strong{display:block;margin-top:12px;font-size:0.875rem;color:#f4f1e8}
+        .guest-empty-cell p{margin:6px auto 0;color:#9daa9a;font-size:0.75rem;line-height:1.6;max-width:46ch}
+        .guest-empty-cell .manager-action-secondary{margin-top:14px}
+        /* Drawer */
+        .drawer-backdrop{position:fixed;inset:0;background:#080a09c9;z-index:var(--z-backdrop);backdrop-filter:blur(3px)}
+        .guest-drawer{position:fixed;top:0;right:0;bottom:0;z-index:calc(var(--z-backdrop) + 1);width:min(460px,100%);padding:22px;border-left:1px solid #3b453b;background:linear-gradient(145deg,#1d251e,#171d18);color:#f2efe5;overflow-y:auto;animation:guest-drawer-in .22s ease}
+        @keyframes guest-drawer-in{from{transform:translateX(28px);opacity:0}to{transform:translateX(0);opacity:1}}
+        .guest-drawer-inner{outline:none}
+        .guest-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+        .guest-drawer-head h2{margin:6px 0 0;font:500 1.375rem var(--font-playfair),Georgia,serif;letter-spacing:-.02em}
+        .guest-drawer-sub{display:flex;align-items:center;gap:9px;margin:10px 0 0;color:#9daa9a;font-size:0.6875rem}
+        .guest-drawer-close{flex:0 0 auto;min-height:34px;min-width:34px;border:1px solid #485447;border-radius:8px;background:#242c24;color:#e8e5da;font:600 0.9375rem/1 inherit;cursor:pointer}
+        .guest-drawer-close:hover{border-color:var(--restaurant-primary,#d7b46a);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 42%,white)}
+        .guest-drawer-form{display:grid;gap:15px;margin-top:18px}
+        .guest-drawer-form label{display:grid;gap:7px;color:#e8e6dc;font-size:0.6875rem;font-weight:600}
+        .guest-drawer-form input,.guest-drawer-form textarea{width:100%;min-height:42px;padding:9px 11px;border:1px solid #4a554b;border-radius:8px;background:#141a15;color:#f4f1e8;font:inherit;font-size:0.75rem}
+        .guest-drawer-form textarea{resize:vertical;min-height:88px}
+        .guest-drawer-form input:focus,.guest-drawer-form textarea:focus{outline:none;box-shadow:0 0 0 3px var(--focus-ring);border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}
+        .guest-drawer-form small{color:#9daa9a;font-size:0.625rem;font-weight:400}
+        .guest-drawer-error{margin:0;font-size:0.6875rem;color:#ffb7aa}
+        .guest-drawer-tags{display:flex;gap:8px;flex-wrap:wrap}
+        .guest-tag-option{border:1px solid #454c45;border-radius:999px;background:#202622;color:#abb2a8;padding:6px 11px;font-size:0.6875rem;font-weight:700;cursor:pointer;transition:.15s ease}
+        .guest-tag-option:hover{border-color:color-mix(in srgb,var(--tag-color) 45%,transparent)}
+        .guest-tag-option.active{color:var(--tag-color);border-color:color-mix(in srgb,var(--tag-color) 65%,transparent);background:color-mix(in srgb,var(--tag-color) 12%,transparent)}
+        /* Confirm dialog — system modal spec */
+        .guest-confirm-card{position:fixed;inset:0;z-index:calc(var(--z-backdrop) + 1);display:grid;place-items:center;padding:18px;pointer-events:none}
+        .guest-confirm-inner{pointer-events:auto;width:min(430px,100%);padding:23px;border:1px solid #4b5148;border-radius:17px;background:#1d221e;color:#f2efe5;box-shadow:0 24px 90px #0009;outline:none;animation:guest-confirm-in .18s ease}
+        @keyframes guest-confirm-in{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .guest-confirm-text{margin:14px 0 0;color:#aeb8ab;font-size:0.75rem;line-height:1.6}
+        .guest-confirm-text strong{color:#f4f1e8}
+        .guest-confirm-actions{display:flex;gap:9px;justify-content:flex-end;margin-top:20px}
+        @media(prefers-reduced-motion:reduce){.guest-drawer,.guest-confirm-inner{animation:none}.guest-table tbody tr{transition:none}}
+        /* Mobile — mirrors the staff table collapse */
+        @media(max-width:860px){.guest-panel{padding:17px}.guest-panel-heading{align-items:flex-start;flex-direction:column;gap:13px}.guest-search{min-width:100%}.guest-count{margin-left:0}.guest-table thead{display:none}.guest-table tbody tr{display:grid;gap:12px;padding:16px 0;border-bottom:1px solid #2b322b}.guest-table tbody tr:last-child{border-bottom:0}.guest-table tbody tr:hover{background:transparent}.guest-table td{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center;gap:0 12px;padding:0;border:0}.guest-table td::before{content:attr(data-label);color:#9ba198;font-size:0.625rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.guest-empty-cell{display:block;text-align:left;padding:0}.guest-empty-cell::before{content:none}.guest-empty-tile{margin:0}.guest-cell-actions{display:flex;justify-content:flex-start;gap:8px}.guest-cell-note span{white-space:normal}}
       `}</style>
     </div>
   )
