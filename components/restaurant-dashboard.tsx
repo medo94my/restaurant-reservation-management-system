@@ -262,7 +262,7 @@ export default function HomePage({ managerAccess = false, branding = null, manag
   const seatNextArrival = async () => {
     const waiting = bookings
       .map((booking) => ({ booking, unit: shownUnits.find((unit) => unit.id === booking.unit) }))
-      .filter((entry) => entry.unit?.status === 'prep')
+      .filter((entry) => entry.unit?.status === 'prep' || entry.unit?.status === 'available')
       .sort((a, z) => a.booking.time.localeCompare(z.booking.time))
     if (waiting.length === 0) {
       setConsoleNotice('No tables are waiting to be seated — everyone on the books is already in.')
@@ -398,7 +398,7 @@ export default function HomePage({ managerAccess = false, branding = null, manag
             <span className="console-arrival-actions">
               <span className="booking-tag">{unitState?.status==='seated'?'SEATED':b.arrived?'ARRIVED':'BOOKED'}</span>
               <button type="button" className={`arrive-toggle ${b.arrived?'on':''}`} aria-pressed={!!b.arrived} onClick={()=>void setReservationArrival(b.id,!b.arrived)}>{icon(b.arrived?'check_circle':'radio_button_unchecked',16)}{b.arrived?'Arrived':'Arrive'}</button>
-              {unitState?.status==='prep'&&<button type="button" className="button small" onClick={()=>void seatReservation(b.id)}>Seat</button>}
+              {(unitState?.status==='prep'||unitState?.status==='available')&&<button type="button" className="button small" onClick={()=>void seatReservation(b.id)}>Seat</button>}
             </span>
           </div>
         })}

@@ -1,7 +1,8 @@
-import { and, asc, eq, gte, lt, ne, sql } from 'drizzle-orm'
+import { and, asc, eq, gte, inArray, lt, ne, sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { db, restaurantGuestProfiles, restaurantReservations, restaurantServiceEvents, restaurantUnitStates, restaurantWorkspaceConfig } from '@/lib/db'
 import { getStaffContext, isManager } from '@/lib/staff-auth'
+import { SEATING_SPAN_MINUTES, timeDistanceMinutes } from '@/lib/service-slots'
 import { isSameOrigin as checkSameOrigin } from '@/lib/same-origin'
 import { DEFAULT_FLOOR_ITEMS, RESTAURANT_ID } from '@/lib/restaurant-config'
 import type { CustomerProfile, RestaurantConfig, Unit } from '@/lib/restaurant-config'
@@ -270,6 +271,7 @@ export async function GET(request: Request) {
 }
 
 class UnitUnavailableError extends Error {}
+class SlotTakenError extends Error {}
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: 'Request origin is not allowed.' }, { status: 403 })
@@ -311,6 +313,13 @@ export async function POST(request: Request) {
       .format(new Date(`2000-01-01T${time}:00Z`))
 
     const reservation = await db.transaction(async (tx) => {
+      // Serialize same-table booking attempts so two concurrent creations
+      // can't both pass the slot check below; the lock releases with the
+      // transaction.
+      if (!isUnassigned) {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`${restaurantId}:${unitId}`}))`)
+      }
+
       const [created] = await tx.insert(restaurantReservations).values({
         restaurantId,
         serviceDate,
@@ -326,6 +335,27 @@ export async function POST(request: Request) {
         status: 'booked',
         clientRequestId: requestId,
       }).returning()
+
+      // Same table, same service date: an active booking (booked/arrived/
+      // seated) starting within one seating span of the new one is a
+      // double-booking. Applies to past and future dates alike; skipped for
+      // unassigned bookings, which hold no table. Runs inside the advisory
+      // lock above, so concurrent creations for the same table can't both
+      // pass it.
+      if (!isUnassigned) {
+        const candidates = await tx.select({ reservationTime: restaurantReservations.reservationTime })
+          .from(restaurantReservations)
+          .where(and(
+            eq(restaurantReservations.restaurantId, restaurantId),
+            eq(restaurantReservations.serviceDate, serviceDate),
+            eq(restaurantReservations.unitId, unitId),
+            ne(restaurantReservations.id, created.id),
+            inArray(restaurantReservations.status, ['booked', 'arrived', 'seated']),
+          ))
+        if (candidates.some((row) => timeDistanceMinutes(row.reservationTime, time) < SEATING_SPAN_MINUTES)) {
+          throw new SlotTakenError()
+        }
+      }
 
       // Atomically claim the live floor unit: the conditional upsert lets
       // exactly one concurrent booking move an available unit to `prep`, and
@@ -349,7 +379,17 @@ export async function POST(request: Request) {
             setWhere: eq(restaurantUnitStates.status, 'available'),
           })
           .returning()
-        if (!claimed) throw new UnitUnavailableError()
+        if (!claimed) {
+          // Another seating holds the unit (prep/seated) or it's blocked. A
+          // held table is fine — the booking stands and joins the run sheet;
+          // clobbering that state here would evict the other party. A blocked
+          // table is a hard no.
+          const [state] = await tx.select({ status: restaurantUnitStates.status })
+            .from(restaurantUnitStates)
+            .where(and(eq(restaurantUnitStates.restaurantId, restaurantId), eq(restaurantUnitStates.unitId, unitId)))
+            .limit(1)
+          if (state?.status === 'blocked') throw new UnitUnavailableError()
+        }
       }
 
       const [profile] = await tx.select().from(restaurantGuestProfiles)
@@ -392,6 +432,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ reservation: serializeReservation(reservation) }, { status: 201 })
   } catch (error) {
+    if (error instanceof SlotTakenError) {
+      return NextResponse.json({ error: 'That table already has a booking around that time.' }, { status: 409 })
+    }
     if (error instanceof UnitUnavailableError) {
       return NextResponse.json({ error: 'That floor unit is no longer available.' }, { status: 409 })
     }

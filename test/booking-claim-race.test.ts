@@ -9,8 +9,10 @@ const RESTAURANT_ID = 'test-claim-race-probe'
 const UNIT_ID = 'Table 99'
 
 // Mirrors the exact claim statement from app/api/service-data/route.ts: a
-// conditional upsert that only wins while the unit is still 'available'. The
-// route maps a 0-row result to 409 "That floor unit is no longer available."
+// conditional upsert that only wins while the unit is still 'available'. A
+// 0-row result means another seating holds the unit (the route keeps the
+// booking without clobbering the live state) or the unit is blocked (the
+// route turns that into 409).
 async function claimViaDrizzle(reservationId: number) {
   return db.transaction(async (tx) => {
     const claim = {
@@ -66,7 +68,7 @@ d('booking unit claim (integration — mirrors app/api/service-data)', () => {
     expect(row.reservationId).toBe(winner.reservationId)
   })
 
-  it('refuses to claim a unit that is not available (0 rows — the route turns this into 409)', async () => {
+  it('does not claim a unit that is not available (0 rows — the route keeps the booking without clobbering state)', async () => {
     await seedUnit('seated')
     const claimed = await claimViaDrizzle(201)
     expect(claimed).toBeUndefined()
