@@ -126,3 +126,10 @@ textarea::placeholder {
   outline: 2px solid var(--restaurant-primary, #d7b46a);
   outline-offset: 2px;
 }
+
+/* Typing surfaces: the caret + border color carry focus here — no ring while typing. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}

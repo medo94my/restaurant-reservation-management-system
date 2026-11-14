@@ -363,12 +363,12 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
         .guest-search .material-symbols-outlined{position:absolute;left:12px;top:50%;translate:0 -50%;font-size:17px;color:#9ba198;pointer-events:none}
         .guest-search input{width:100%;min-height:42px;border:1px solid #4a554b;border-radius:8px;background:#141a15;color:#f4f1e8;padding:0 34px 0 37px;font:inherit;font-size:0.75rem}
         .guest-search input::placeholder{color:#8d958b}
-        .guest-search input:focus{outline:none;box-shadow:0 0 0 3px var(--focus-ring);border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}
+        .guest-search input:focus{outline:none;border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}
         .guest-search-clear{position:absolute;right:7px;top:50%;translate:0 -50%;width:26px;height:26px;display:grid;place-items:center;border:0;border-radius:6px;background:transparent;color:#9ba198;cursor:pointer}
         .guest-search-clear:hover{color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 55%,white)}
         .guest-search-clear .material-symbols-outlined{font-size:15px;position:static;translate:none}
         .guest-filter{min-height:42px;min-width:136px;padding:0 11px;border:1px solid #4a554b;border-radius:8px;background:#141a15;color:#f4f1e8;font:inherit;font-size:0.75rem;cursor:pointer}
-        .guest-filter:focus{outline:none;box-shadow:0 0 0 3px var(--focus-ring);border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}
+        .guest-filter:focus{outline:none;border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}
         .guest-count{margin-left:auto;font-size:0.6875rem;color:#9ba198;white-space:nowrap}
         .guest-save-state{font-size:0.6875rem;white-space:nowrap}
         .guest-save-state[data-status="saving"]{color:#9ba198}
@@ -419,7 +419,7 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
         .guest-drawer-form label{display:grid;gap:7px;color:#e8e6dc;font-size:0.6875rem;font-weight:600}
         .guest-drawer-form input,.guest-drawer-form textarea{width:100%;min-height:42px;padding:9px 11px;border:1px solid #4a554b;border-radius:8px;background:#141a15;color:#f4f1e8;font:inherit;font-size:0.75rem}
         .guest-drawer-form textarea{resize:vertical;min-height:88px}
-        .guest-drawer-form input:focus,.guest-drawer-form textarea:focus{outline:none;box-shadow:0 0 0 3px var(--focus-ring);border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}
+        .guest-drawer-form input:focus,.guest-drawer-form textarea:focus{outline:none;border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}
         .guest-drawer-form small{color:#9daa9a;font-size:0.625rem;font-weight:400}
         .guest-drawer-error{margin:0;font-size:0.6875rem;color:#ffb7aa}
         .guest-drawer-tags{display:flex;gap:8px;flex-wrap:wrap}
