@@ -130,7 +130,9 @@ const globalForPool = globalThis as unknown as { restaurantPool?: Pool }
 export const pool = globalForPool.restaurantPool ?? new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 5,
-  idleTimeoutMillis: 30_000,
+  // Neon's pooler tolerates long-idle client connections; dropping them after
+  // 30s made every occasional save re-pay a ~1.4s TLS+auth handshake.
+  idleTimeoutMillis: 300_000,
   connectionTimeoutMillis: 10_000,
 })
 
