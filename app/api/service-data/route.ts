@@ -175,6 +175,22 @@ function serializeUnitState(row: typeof restaurantUnitStates.$inferSelect) {
   }
 }
 
+// One-time-per-process bootstrap: these migrations matter on a fresh
+// database, but running them on every GET cost 2 extra DB round-trips
+// (~370ms against a remote Postgres) for no new information. Cleared on
+// failure so the next request retries.
+let serviceBootstrap: Promise<void> | null = null
+function runServiceBootstrap(floorItems: Unit[]) {
+  serviceBootstrap ??= (async () => {
+    await ensureUnitStates(floorItems)
+    await migrateGuestProfiles()
+  })().catch((error) => {
+    serviceBootstrap = null
+    throw error
+  })
+  return serviceBootstrap
+}
+
 export async function GET(request: Request) {
   if (!(await hasStaffSession(request))) {
     return NextResponse.json({ error: 'Sign in to access restaurant data.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } })
@@ -190,8 +206,7 @@ export async function GET(request: Request) {
 
   try {
     const floorItems = await getFloorItems()
-    await ensureUnitStates(floorItems)
-    await migrateGuestProfiles()
+    await runServiceBootstrap(floorItems)
 
     const [reservations, unitStates, completedToday, completedThisMonth, customers] = await Promise.all([
       db.select().from(restaurantReservations)
