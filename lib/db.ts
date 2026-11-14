@@ -88,6 +88,7 @@ export const authSession = pgTable('session', {
   id: text('id').primaryKey(),
   userId: text('userId').notNull(),
   impersonatedBy: text('impersonatedBy'),
+  expiresAt: timestamp('expiresAt', { withTimezone: true }).notNull(),
 })
 
 export const authAccount = pgTable('account', {

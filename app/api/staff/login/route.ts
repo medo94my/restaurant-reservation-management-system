@@ -1,7 +1,7 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, lt } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { auth, baseURL } from '@/lib/auth'
-import { db, restaurantStaffProfiles } from '@/lib/db'
+import { authSession, db, restaurantStaffProfiles } from '@/lib/db'
 import { clearLoginThrottle, consumeLoginThrottle, loginThrottleKeys, staffAuthUsername } from '@/lib/staff-auth'
 import { RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
 import { isSameOrigin } from '@/lib/same-origin'
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     const [profile] = await db
-      .select({ restaurantId: restaurantStaffProfiles.restaurantId, staffId: restaurantStaffProfiles.staffId, active: restaurantStaffProfiles.active })
+      .select({ authUserId: restaurantStaffProfiles.authUserId, restaurantId: restaurantStaffProfiles.restaurantId, staffId: restaurantStaffProfiles.staffId, active: restaurantStaffProfiles.active })
       .from(restaurantStaffProfiles)
       .where(and(
         eq(restaurantStaffProfiles.restaurantId, RESTAURANT_MANAGER_USER_ID),
@@ -58,6 +58,16 @@ export async function POST(request: Request) {
 
     if (!response.ok) return genericFailure()
     await clearLoginThrottle(throttleKeys)
+
+    // Housekeeping from the sign-in loop era: every successful sign-in drops
+    // this user's expired session rows so the session table self-cleans.
+    if (profile.authUserId) {
+      await db.delete(authSession).where(and(
+        eq(authSession.userId, profile.authUserId),
+        lt(authSession.expiresAt, new Date()),
+      ))
+    }
+
     return response
   } catch (error) {
     console.error('[staff-auth] Sign-in failed:', error instanceof Error ? error.message : 'unknown error')

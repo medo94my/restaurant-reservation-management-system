@@ -43,10 +43,48 @@ const productionOrigins = [
   .map(getOrigin)
   .filter((origin): origin is string => Boolean(origin))
 
+// The v0 sandbox frames this app cross-origin inside an https iframe, where
+// cookies must be SameSite=None; Secure. Everywhere else (localhost dev, the
+// iPad hitting a LAN IP, direct Vercel browsing) browsers REJECT that
+// combination over plain http — the session cookie is silently dropped after
+// sign-in and the user loops back to the login screen forever. Defaults
+// (SameSite=Lax, secure derived from the baseURL scheme) are correct there.
+const inV0IframePreview = Boolean(
+  process.env.V0_RUNTIME_URL
+  || process.env.V0_DEV_APP_URL
+  || process.env.V0_BUILD_URL
+  || process.env.V0_SANDBOX_URL,
+)
+
+// Better Auth already trusts the `baseURL` origin on its own. The entries
+// below add: the env-derived deployment origins, plus (per request) the
+// origin matching the serving Host header — the same rule lib/same-origin.ts
+// applies app-wide (the Host header cannot be forged for CSRF). That keeps
+// sign-out working from LAN devices (iPad) and Vercel preview hosts without
+// enumerating every port and hostname, while a cross-site attacker's Origin
+// never matches the serving Host.
+function requestHostOrigin(request: Request | undefined): string | undefined {
+  const host = request?.headers.get('host')?.toLowerCase().trim()
+  if (!request || !host) return undefined
+
+  // Behind a proxy (Vercel, v0) the forwarded header is authoritative; a
+  // direct hit (localhost dev, the iPad on a LAN IP) is always plain http.
+  const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase()
+  const proto = forwardedProto || 'http'
+  try {
+    return new URL(`${proto}://${host}`).origin
+  } catch {
+    return undefined
+  }
+}
+
 export const auth = betterAuth({
   database: pool,
   baseURL,
-  trustedOrigins: [...new Set(isDevelopment ? developmentOrigins : productionOrigins)],
+  trustedOrigins: (request) => [
+    ...new Set(isDevelopment ? developmentOrigins : productionOrigins),
+    requestHostOrigin(request),
+  ].filter((origin): origin is string => Boolean(origin)),
   emailAndPassword: {
     enabled: true,
     autoSignIn: false,
@@ -77,7 +115,7 @@ export const auth = betterAuth({
       '/sign-up/email': { window: 60, max: 3 },
     },
   },
-  ...(isDevelopment
+  ...(inV0IframePreview
     ? {
         advanced: {
           defaultCookieAttributes: {

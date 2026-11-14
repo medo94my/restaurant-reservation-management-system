@@ -12,7 +12,16 @@ export function staffAuthUsername(restaurantId: string, staffId: string) {
 }
 
 export async function getStaffContext(requestHeaders?: Headers) {
-  const session = await auth.api.getSession({ headers: requestHeaders ?? await headers() })
+  let session: Awaited<ReturnType<typeof auth.api.getSession>>
+  try {
+    session = await auth.api.getSession({ headers: requestHeaders ?? await headers() })
+  } catch (error) {
+    // Better Auth throws on internal faults (db outage, schema drift). Those
+    // used to surface as a silent 401 indistinguishable from "not signed in",
+    // which cost a full debug session to untangle.
+    console.error('[staff-auth] getSession failed:', error instanceof Error ? error.message : error)
+    return null
+  }
   if (!session?.user) return null
 
   const [profile] = await db
