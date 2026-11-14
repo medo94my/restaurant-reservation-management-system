@@ -1,146 +1,495 @@
 'use client'
 
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import React, { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type TouchEvent } from 'react'
+import {
+  FloorLayoutEngine,
+  getDynamicTableDimensions,
+  getCouchDimensions,
+  snapToGrid,
+  clampUnitPosition,
+  calculateFloorBoundingBox,
+  type SeatPosition,
+} from '@/lib/floor-layout'
 import type { CouchShape, RoomUnit, TableShape, TableUnit, Unit } from '@/lib/restaurant-config'
+import {
+  Box,
+  Typography,
+  Paper,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  IconButton,
+  Tooltip,
+  Slider,
+  Chip,
+} from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import RemoveIcon from '@mui/icons-material/Remove'
+import RotateRightIcon from '@mui/icons-material/RotateRight'
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined'
+import ZoomInIcon from '@mui/icons-material/ZoomIn'
+import ZoomOutIcon from '@mui/icons-material/ZoomOut'
+import FitScreenIcon from '@mui/icons-material/FitScreen'
+import RestartAltIcon from '@mui/icons-material/RestartAlt'
+import GridOnIcon from '@mui/icons-material/GridOn'
+import GridOffIcon from '@mui/icons-material/GridOff'
 
 const SHAPES: { value: TableShape; label: string }[] = [
   { value: 'round', label: 'Round' },
   { value: 'square', label: 'Square' },
   { value: 'rectangle', label: 'Rectangle' },
   { value: 'oval', label: 'Oval' },
-  { value: 'long', label: 'Long' },
+  { value: 'long', label: 'Long Table' },
 ]
 
 const COUCH_SHAPES: { value: CouchShape; label: string }[] = [
   { value: 'loveseat', label: 'Loveseat' },
-  { value: 'sofa', label: 'Sofa' },
+  { value: 'sofa', label: '3-Seat Sofa' },
+  { value: 'l-sectional', label: 'L-Sectional' },
+  { value: 'banquette', label: 'Banquette' },
 ]
 
-const statusColors: Record<Unit['status'], { stroke: string; label: string }> = {
-  available: { stroke: '#78b38a', label: 'Available' },
-  seated: { stroke: '#a5a6ed', label: 'Seated' },
-  prep: { stroke: '#e5bd60', label: 'Prep needed' },
-  blocked: { stroke: '#89908a', label: 'Out of service' },
+const statusColors: Record<Unit['status'], { stroke: string; fill: string; label: string }> = {
+  available: { stroke: '#78b38a', fill: '#223828', label: 'Available' },
+  seated: { stroke: '#a5a6ed', fill: '#272945', label: 'Seated' },
+  prep: { stroke: '#e5bd60', fill: '#45371b', label: 'Prep needed' },
+  blocked: { stroke: '#89908a', fill: '#2b2e2b', label: 'Out of service' },
 }
-
-const TABLE_DIMENSIONS: Record<TableShape, { width: number; height: number }> = {
-  round: { width: 72, height: 72 },
-  square: { width: 68, height: 68 },
-  rectangle: { width: 106, height: 68 },
-  oval: { width: 108, height: 68 },
-  long: { width: 132, height: 62 },
-}
-
-type SeatPosition = { x: number; y: number; rotation: number }
 
 type Props = {
   items: Unit[]
   editable?: boolean
   onChange?: (items: Unit[]) => void
   onActivate?: (item: Unit) => void
+  statusFilter?: Unit['status'] | 'all'
 }
 
-function getTableSeats(table: Pick<TableUnit, 'tableType' | 'capacity'>): SeatPosition[] {
-  const { width, height } = TABLE_DIMENSIONS[table.tableType]
-  if (table.tableType === 'round' || table.tableType === 'oval') {
-    return Array.from({ length: table.capacity }, (_, index) => {
-      const angle = -Math.PI / 2 + index * (Math.PI * 2 / table.capacity)
-      const x = Math.cos(angle) * (width / 2 + 15)
-      const y = Math.sin(angle) * (height / 2 + 15)
-      return { x, y, rotation: Math.atan2(x, -y) * (180 / Math.PI) }
-    })
-  }
-
-  const counts = [0, 0, 0, 0]
-  for (let index = 0; index < table.capacity; index += 1) counts[index % counts.length] += 1
-  const seats: SeatPosition[] = []
-  const addSide = (side: number, count: number) => {
-    for (let index = 0; index < count; index += 1) {
-      const fraction = (index + 1) / (count + 1)
-      if (side === 0) seats.push({ x: (fraction - 0.5) * width, y: -height / 2 - 13, rotation: 0 })
-      if (side === 1) seats.push({ x: (fraction - 0.5) * width, y: height / 2 + 13, rotation: 180 })
-      if (side === 2) seats.push({ x: -width / 2 - 13, y: (fraction - 0.5) * height, rotation: 270 })
-      if (side === 3) seats.push({ x: width / 2 + 13, y: (fraction - 0.5) * height, rotation: 90 })
-    }
-  }
-  counts.forEach(addSide)
-  return seats
-}
-
-function Chair({ seat }: { seat: SeatPosition }) {
+/**
+ * Realistic Armchair / Dining Chair with cushioned pad, curved backrest & frame
+ */
+function RealisticChair({ seat }: { seat: SeatPosition }) {
   return (
     <g transform={`translate(${seat.x} ${seat.y}) rotate(${seat.rotation})`} aria-hidden="true">
-      <rect x="-9" y="-12" width="18" height="7" rx="3" fill="#72543a" stroke="#c7a06a" strokeWidth="1.5" />
-      <rect x="-7.5" y="-7" width="15" height="15" rx="3.5" fill="url(#chair-seat)" stroke="#715238" strokeWidth="1.4" />
-      <path d="M -5 5 V 10 M 5 5 V 10" fill="none" stroke="#5b4533" strokeWidth="1.4" strokeLinecap="round" />
+      {/* Chair Backrest */}
+      <rect
+        x="-10"
+        y="-15"
+        width="20"
+        height="8"
+        rx="4"
+        fill="#5a3d28"
+        stroke="#c7a06a"
+        strokeWidth="1.2"
+      />
+      {/* Side Armrests */}
+      <rect x="-11" y="-12" width="3" height="12" rx="1.5" fill="#4d3320" />
+      <rect x="8" y="-12" width="3" height="12" rx="1.5" fill="#4d3320" />
+      {/* Cushioned Seat Pad */}
+      <rect
+        x="-8"
+        y="-8"
+        width="16"
+        height="16"
+        rx="4"
+        fill="url(#chair-seat)"
+        stroke="#755033"
+        strokeWidth="1.2"
+      />
+      {/* Center Cushion Stitch Accent */}
+      <circle cx="0" cy="0" r="1.5" fill="#5a3d28" opacity="0.6" />
+      {/* Shadow under seat */}
+      <ellipse cx="0" cy="9" rx="6" ry="2" fill="#000000" opacity="0.25" />
     </g>
   )
 }
 
-function TableAsset({ item, showLabel = true }: { item: TableUnit; showLabel?: boolean }) {
-  const { width, height } = TABLE_DIMENSIONS[item.tableType]
+/**
+ * Realistic Dining Table with dynamic seats, place settings, and live status
+ */
+function RealisticTable({
+  item,
+  showLabel = true,
+}: {
+  item: TableUnit
+  showLabel?: boolean
+}) {
+  const { width, height } = getDynamicTableDimensions(item.tableType, item.capacity)
+  const seats = FloorLayoutEngine.computeSeatLayout(item)
+
   return (
     <g aria-hidden="true">
-      {getTableSeats(item).map((seat, index) => <Chair key={`${item.id}-seat-${index}`} seat={seat} />)}
-      {item.tableType === 'round' && <>
-        <circle r="35" fill="url(#table-top)" stroke="#806044" strokeWidth="3" />
-        <circle r="29" fill="none" stroke="#efd2a1" strokeOpacity=".26" strokeWidth="1.4" />
-        <path d="M -18 -12 Q 0 -18 18 -12" fill="none" stroke="#f1d6aa" strokeOpacity=".22" strokeWidth="1.4" />
-      </>}
-      {item.tableType === 'square' && <>
-        <rect x={-width / 2} y={-height / 2} width={width} height={height} rx="10" fill="url(#table-top)" stroke="#806044" strokeWidth="3" />
-        <rect x={-width / 2 + 6} y={-height / 2 + 6} width={width - 12} height={height - 12} rx="6" fill="none" stroke="#efd2a1" strokeOpacity=".24" />
-      </>}
-      {item.tableType === 'rectangle' && <>
-        <rect x={-width / 2} y={-height / 2} width={width} height={height} rx="12" fill="url(#table-top)" stroke="#806044" strokeWidth="3" />
-        <path d={`M ${-width / 2 + 12} -8 H ${width / 2 - 12}`} stroke="#efd2a1" strokeOpacity=".2" strokeWidth="1.5" />
-      </>}
-      {item.tableType === 'oval' && <>
-        <ellipse rx={width / 2} ry={height / 2} fill="url(#table-top)" stroke="#806044" strokeWidth="3" />
-        <ellipse rx={width / 2 - 7} ry={height / 2 - 7} fill="none" stroke="#efd2a1" strokeOpacity=".24" />
-      </>}
-      {item.tableType === 'long' && <>
-        <rect x={-width / 2} y={-height / 2} width={width} height={height} rx="11" fill="url(#table-top)" stroke="#806044" strokeWidth="3" />
-        <path d={`M ${-width / 2 + 12} -9 H ${width / 2 - 12} M ${-width / 2 + 12} 9 H ${width / 2 - 12}`} stroke="#efd2a1" strokeOpacity=".18" />
-      </>}
-      {showLabel && <>
-        <text y="-2" textAnchor="middle" fill="#fff3dc" fontSize="11" fontWeight="700" pointerEvents="none">{item.id}</text>
-        <text y="14" textAnchor="middle" fill="#f0ddbc" fontSize="9" pointerEvents="none">{item.capacity} seats</text>
-      </>}
+      {/* Dynamic Seats around Perimeter */}
+      {seats.map((seat, index) => (
+        <RealisticChair key={`${item.id}-seat-${index}`} seat={seat} />
+      ))}
+
+      {/* Table Drop Shadow */}
+      {item.tableType === 'round' && (
+        <circle r={width / 2 + 3} cy="4" fill="#000000" opacity="0.35" filter="blur(3px)" />
+      )}
+      {(item.tableType === 'square' ||
+        item.tableType === 'rectangle' ||
+        item.tableType === 'long') && (
+        <rect
+          x={-width / 2 - 2}
+          y={-height / 2 + 3}
+          width={width + 4}
+          height={height + 4}
+          rx="4"
+          fill="#000000"
+          opacity="0.35"
+        />
+      )}
+      {item.tableType === 'oval' && (
+        <ellipse
+          rx={width / 2 + 3}
+          ry={height / 2 + 3}
+          cy="4"
+          fill="#000000"
+          opacity="0.35"
+        />
+      )}
+
+      {/* Main Table Top Geometry */}
+      {item.tableType === 'round' && (
+        <>
+          <circle r={width / 2} fill="url(#table-top)" stroke="#5c3f26" strokeWidth="2.5" />
+          <circle r={width / 2 - 4} fill="none" stroke="#d7b46a" strokeOpacity="0.3" strokeWidth="1" />
+          <circle r={width / 2 - 12} fill="none" stroke="#f1d6aa" strokeOpacity="0.15" strokeDasharray="3 3" />
+        </>
+      )}
+
+      {item.tableType === 'square' && (
+        <>
+          <rect
+            x={-width / 2}
+            y={-height / 2}
+            width={width}
+            height={height}
+            rx="4"
+            fill="url(#table-top)"
+            stroke="#5c3f26"
+            strokeWidth="2.5"
+          />
+          <rect
+            x={-width / 2 + 5}
+            y={-height / 2 + 5}
+            width={width - 10}
+            height={height - 10}
+            rx="2"
+            fill="none"
+            stroke="#d7b46a"
+            strokeOpacity="0.3"
+          />
+        </>
+      )}
+
+      {item.tableType === 'rectangle' && (
+        <>
+          <rect
+            x={-width / 2}
+            y={-height / 2}
+            width={width}
+            height={height}
+            rx="4"
+            fill="url(#table-top)"
+            stroke="#5c3f26"
+            strokeWidth="2.5"
+          />
+          <rect
+            x={-width / 2 + 5}
+            y={-height / 2 + 5}
+            width={width - 10}
+            height={height - 10}
+            rx="2"
+            fill="none"
+            stroke="#d7b46a"
+            strokeOpacity="0.28"
+          />
+          <path
+            d={`M ${-width / 2 + 16} -6 H ${width / 2 - 16}`}
+            stroke="#f1d6aa"
+            strokeOpacity="0.2"
+            strokeWidth="1.2"
+          />
+        </>
+      )}
+
+      {item.tableType === 'oval' && (
+        <>
+          <ellipse
+            rx={width / 2}
+            ry={height / 2}
+            fill="url(#table-top)"
+            stroke="#5c3f26"
+            strokeWidth="2.5"
+          />
+          <ellipse
+            rx={width / 2 - 5}
+            ry={height / 2 - 5}
+            fill="none"
+            stroke="#d7b46a"
+            strokeOpacity="0.3"
+          />
+        </>
+      )}
+
+      {item.tableType === 'long' && (
+        <>
+          <rect
+            x={-width / 2}
+            y={-height / 2}
+            width={width}
+            height={height}
+            rx="4"
+            fill="url(#table-top)"
+            stroke="#5c3f26"
+            strokeWidth="2.5"
+          />
+          <rect
+            x={-width / 2 + 6}
+            y={-height / 2 + 6}
+            width={width - 12}
+            height={height - 12}
+            rx="2"
+            fill="none"
+            stroke="#d7b46a"
+            strokeOpacity="0.28"
+          />
+          <path
+            d={`M ${-width / 2 + 18} -8 H ${width / 2 - 18} M ${-width / 2 + 18} 8 H ${width / 2 - 18}`}
+            stroke="#f1d6aa"
+            strokeOpacity="0.18"
+          />
+        </>
+      )}
+
+      {/* Place Settings (Plates hints) */}
+      {seats.map((seat, idx) => {
+        const rad = (seat.rotation * Math.PI) / 180
+        const plateInset = 23
+        const px = seat.x - Math.sin(rad) * plateInset
+        const py = seat.y + Math.cos(rad) * plateInset
+        return (
+          <g key={`plate-${idx}`} opacity="0.35">
+            <circle cx={px} cy={py} r="4.5" fill="#f5f0e6" />
+            <circle cx={px} cy={py} r="3" fill="none" stroke="#d7b46a" strokeWidth="0.8" />
+          </g>
+        )
+      })}
+
+      {/* Center Table Badge & Label */}
+      {showLabel && (
+        <g>
+          <rect
+            x="-26"
+            y="-14"
+            width="52"
+            height="28"
+            rx="3"
+            fill="#171b18"
+            stroke="#d7b46a"
+            strokeOpacity="0.4"
+            strokeWidth="1"
+          />
+          <text
+            y="-2"
+            textAnchor="middle"
+            fill="#f7f1e4"
+            fontSize="10"
+            fontWeight="700"
+            letterSpacing="0.02em"
+          >
+            {item.id}
+          </text>
+          <text y="9" textAnchor="middle" fill="#d7b46a" fontSize="8" fontWeight="600">
+            {item.capacity} seats
+          </text>
+        </g>
+      )}
     </g>
   )
 }
 
-function CouchAsset({ item }: { item: Extract<Unit, { kind: 'Couch' }> }) {
-  const width = item.couchType === 'loveseat' ? 104 : Math.max(126, 82 + item.capacity * 24)
-  const height = 66
+/**
+ * Realistic Luxury Lounge Couch with tufted leather cushions, armrests & paired coffee table
+ */
+function RealisticCouch({ item }: { item: Extract<Unit, { kind: 'Couch' }> }) {
+  const { width, height } = getCouchDimensions(item.couchType, item.capacity)
+  const isSectional = item.couchType === 'l-sectional'
+  const isBanquette = item.couchType === 'banquette'
+
+  if (isSectional) {
+    return (
+      <g aria-hidden="true">
+        {/* Shadow */}
+        <path
+          d={`M ${-width / 2} ${-height / 2} H ${width / 2} V ${height / 2} H ${-width / 2 + 45} V ${-height / 2 + 45} H ${-width / 2} Z`}
+          fill="#000000"
+          opacity="0.3"
+          transform="translate(3 4)"
+        />
+        {/* Main Base Frame */}
+        <path
+          d={`M ${-width / 2} ${-height / 2} H ${width / 2} V ${height / 2} H ${-width / 2 + 42} V ${-height / 2 + 42} H ${-width / 2} Z`}
+          fill="#592b23"
+          stroke="#945344"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+        />
+        {/* Tufted Leather Cushions */}
+        <rect x={-width / 2 + 4} y={-height / 2 + 4} width="36" height="36" rx="6" fill="url(#couch-cushion)" />
+        <rect x={-width / 2 + 44} y={-height / 2 + 4} width="42" height="36" rx="6" fill="url(#couch-cushion)" />
+        <rect x={-width / 2 + 90} y={-height / 2 + 4} width="44" height="36" rx="6" fill="url(#couch-cushion)" />
+        <rect x={-width / 2 + 4} y={-height / 2 + 44} width="36" height="58" rx="6" fill="url(#couch-cushion)" />
+
+        {/* Lounge Coffee Table in the inner nook */}
+        <rect x="0" y="0" width="56" height="42" rx="3" fill="url(#coffee-table)" stroke="#d7b46a" strokeWidth="1.2" />
+        <circle cx="28" cy="21" r="3" fill="#d7b46a" opacity="0.6" />
+
+        <text y={height / 2 + 15} textAnchor="middle" fill="#ebd2c5" fontSize="9" fontWeight="700">
+          {item.id} · {item.capacity} seats (Sectional)
+        </text>
+      </g>
+    )
+  }
+
+  if (isBanquette) {
+    return (
+      <g aria-hidden="true">
+        {/* Curved Banquette Arc */}
+        <path
+          d={`M ${-width / 2} 24 Q 0 -36 ${width / 2} 24`}
+          fill="none"
+          stroke="#592b23"
+          strokeWidth="32"
+          strokeLinecap="round"
+        />
+        <path
+          d={`M ${-width / 2} 24 Q 0 -36 ${width / 2} 24`}
+          fill="none"
+          stroke="url(#couch-cushion)"
+          strokeWidth="24"
+          strokeLinecap="round"
+        />
+        {/* Low Table Center */}
+        <ellipse cx="0" cy="18" rx="34" ry="22" fill="url(#coffee-table)" stroke="#d7b46a" strokeWidth="1.2" />
+        <text y="48" textAnchor="middle" fill="#ebd2c5" fontSize="9" fontWeight="700">
+          {item.id} · {item.capacity} seats (Banquette)
+        </text>
+      </g>
+    )
+  }
+
+  // Standard Loveseat or 3-Seat Sofa
   const armWidth = 14
   const cushionArea = width - armWidth * 2 - 12
-  const cushionWidth = cushionArea / item.capacity
+  const cushionWidth = cushionArea / Math.max(1, item.capacity)
+
   return (
     <g aria-hidden="true">
-      <rect x={-width / 2} y={-height / 2} width={width} height={height} rx="17" fill="#704841" stroke="#bd8a70" strokeWidth="2.5" />
-      <rect x={-width / 2 + armWidth} y={-height / 2 + 4} width={width - armWidth * 2} height="19" rx="8" fill="#a86454" stroke="#d09a7d" strokeWidth="1.2" />
+      {/* Shadow */}
+      <rect x={-width / 2 + 2} y={-height / 2 + 4} width={width} height={height} rx="4" fill="#000000" opacity="0.3" />
+
+      {/* Main Sofa Shell */}
+      <rect
+        x={-width / 2}
+        y={-height / 2}
+        width={width}
+        height={height}
+        rx="4"
+        fill="#5a2f27"
+        stroke="#965243"
+        strokeWidth="2"
+      />
+
+      {/* Backrest Cushion */}
+      <rect
+        x={-width / 2 + armWidth}
+        y={-height / 2 + 4}
+        width={width - armWidth * 2}
+        height="18"
+        rx="2"
+        fill="#824135"
+        stroke="#ad6352"
+        strokeWidth="1"
+      />
+
+      {/* Seat Cushions */}
       {Array.from({ length: item.capacity }, (_, index) => {
         const x = -width / 2 + armWidth + 6 + index * cushionWidth
-        return <g key={`${item.id}-cushion-${index}`}>
-          <rect x={x} y="-9" width={cushionWidth - 3} height="28" rx="6" fill="url(#couch-cushion)" stroke="#6a453d" strokeWidth="1.2" />
-          <path d={`M ${x + 5} -5 V 12`} stroke="#f0b6a0" strokeOpacity=".35" strokeWidth="1.2" />
-        </g>
+        return (
+          <g key={`${item.id}-cushion-${index}`}>
+            <rect
+              x={x}
+              y="-8"
+              width={cushionWidth - 3}
+              height="28"
+              rx="6"
+              fill="url(#couch-cushion)"
+              stroke="#542821"
+              strokeWidth="1.2"
+            />
+            {/* Tufting Button Stitch */}
+            <circle cx={x + (cushionWidth - 3) / 2} cy="6" r="1.5" fill="#401e18" />
+          </g>
+        )
       })}
-      <rect x={-width / 2 + 3} y={-height / 2 + 7} width={armWidth} height={height - 14} rx="6" fill="#915849" stroke="#c68a72" strokeWidth="1.3" />
-      <rect x={width / 2 - armWidth - 3} y={-height / 2 + 7} width={armWidth} height={height - 14} rx="6" fill="#915849" stroke="#c68a72" strokeWidth="1.3" />
-      <rect x={-width / 2 + 17} y="20" width={width - 34} height="7" rx="3" fill="#5d4039" opacity=".75" />
-      <text y={height / 2 + 14} textAnchor="middle" fill="#d5b5a7" fontSize="9" fontWeight="600">{item.id} · {item.capacity} seats</text>
+
+      {/* Armrests */}
+      <rect
+        x={-width / 2 + 3}
+        y={-height / 2 + 6}
+        width={armWidth}
+        height={height - 12}
+        rx="3"
+        fill="#75392d"
+        stroke="#aa5f4e"
+        strokeWidth="1.2"
+      />
+      <rect
+        x={width / 2 - armWidth - 3}
+        y={-height / 2 + 6}
+        width={armWidth}
+        height={height - 12}
+        rx="3"
+        fill="#75392d"
+        stroke="#aa5f4e"
+        strokeWidth="1.2"
+      />
+
+      {/* Low Lounge Coffee Table in front */}
+      <rect
+        x={-width / 2 + 20}
+        y={height / 2 + 4}
+        width={width - 40}
+        height="16"
+        rx="2"
+        fill="url(#coffee-table)"
+        stroke="#d7b46a"
+        strokeOpacity="0.4"
+        strokeWidth="1"
+      />
+
+      {/* Label */}
+      <text y={height / 2 + 32} textAnchor="middle" fill="#ebd2c5" fontSize="9" fontWeight="700">
+        {item.id} · {item.capacity} seats
+      </text>
     </g>
   )
 }
 
-function RoomAsset({ item }: { item: RoomUnit }) {
+/**
+ * Realistic Enclosed Private Dining Room (Architectural walls, 90° door arc, chandelier glow)
+ */
+function RealisticRoom({ item }: { item: RoomUnit }) {
   const left = -item.roomWidth / 2
   const top = -item.roomHeight / 2
-  const table: TableUnit = {
-    id: `${item.id} table`,
+  const doorWidth = 36
+
+  const interiorTable: TableUnit = {
+    id: `${item.id}`,
     kind: 'Table',
     tableType: item.tableType,
     capacity: item.capacity,
@@ -149,111 +498,403 @@ function RoomAsset({ item }: { item: RoomUnit }) {
     y: item.y,
     rotation: 0,
   }
+
   return (
     <g aria-hidden="true">
-      <rect x={left + 5} y={top + 5} width={item.roomWidth - 10} height={item.roomHeight - 10} rx="8" fill="#222b24" stroke="#445147" strokeWidth="1" />
-      <rect x={left} y={top} width={item.roomWidth} height={item.roomHeight} rx="9" fill="none" stroke="#a8a38a" strokeWidth="8" />
-      <rect x={-17} y={item.roomHeight / 2 - 6} width="34" height="12" fill="#222b24" />
-      <path d={`M -17 ${item.roomHeight / 2} V ${item.roomHeight / 2 - 26} A 26 26 0 0 1 9 ${item.roomHeight / 2}`} fill="none" stroke="#b8b39a" strokeOpacity=".78" strokeWidth="1.5" />
-      <g transform="scale(.72)"><TableAsset item={table} showLabel={false} /></g>
-      <text x={left + 12} y={top + 19} fill="#e6d19a" fontSize="10" fontWeight="700">{item.id}</text>
-      <text x={left + 12} y={top + 33} fill="#9ea99b" fontSize="8">PRIVATE DINING · {item.capacity} SEATS</text>
+      {/* Outer Drop Shadow */}
+      <rect
+        x={left + 3}
+        y={top + 4}
+        width={item.roomWidth}
+        height={item.roomHeight}
+        rx="2"
+        fill="#000000"
+        opacity="0.45"
+      />
+
+      {/* Room Floor Fill (Parquet wood tint) */}
+      <rect
+        x={left + 5}
+        y={top + 5}
+        width={item.roomWidth - 10}
+        height={item.roomHeight - 10}
+        rx="2"
+        fill="#181d19"
+      />
+      <rect
+        x={left + 5}
+        y={top + 5}
+        width={item.roomWidth - 10}
+        height={item.roomHeight - 10}
+        rx="2"
+        fill="url(#room-floor)"
+        opacity="0.5"
+      />
+
+      {/* Ambient Chandelier Radial Glow */}
+      <circle cx="0" cy="0" r={Math.min(item.roomWidth, item.roomHeight) * 0.45} fill="url(#room-glow)" opacity="0.6" />
+
+      {/* Architectural Double-Line Structural Walls */}
+      <rect
+        x={left}
+        y={top}
+        width={item.roomWidth}
+        height={item.roomHeight}
+        rx="2"
+        fill="none"
+        stroke="#282f29"
+        strokeWidth="10"
+      />
+      <rect
+        x={left}
+        y={top}
+        width={item.roomWidth}
+        height={item.roomHeight}
+        rx="2"
+        fill="none"
+        stroke="#707a6f"
+        strokeWidth="1.5"
+      />
+
+      {/* Door Opening Gap in bottom wall */}
+      <rect
+        x={-doorWidth / 2}
+        y={item.roomHeight / 2 - 7}
+        width={doorWidth}
+        height="14"
+        fill="#181d19"
+      />
+
+      {/* 90° Swinging Door Leaf & Swing Arc */}
+      <path
+        d={`M ${-doorWidth / 2} ${item.roomHeight / 2} A ${doorWidth} ${doorWidth} 0 0 1 ${doorWidth / 2} ${item.roomHeight / 2 - doorWidth}`}
+        fill="none"
+        stroke="#d7b46a"
+        strokeOpacity="0.4"
+        strokeWidth="1.2"
+        strokeDasharray="3 3"
+      />
+      <line
+        x1={-doorWidth / 2}
+        y1={item.roomHeight / 2}
+        x2={-doorWidth / 2}
+        y2={item.roomHeight / 2 - doorWidth}
+        stroke="#d7b46a"
+        strokeWidth="2.5"
+      />
+
+      {/* Embedded Dining Table */}
+      <g transform="scale(0.82)">
+        <RealisticTable item={interiorTable} showLabel={false} />
+      </g>
+
+      {/* Architectural Nameplate Header Banner */}
+      <rect
+        x={left + 14}
+        y={top + 10}
+        width={item.roomWidth - 28}
+        height="22"
+        rx="4"
+        fill="#131714"
+        stroke="#d7b46a"
+        strokeOpacity="0.35"
+      />
+      <text
+        x={0}
+        y={top + 24}
+        textAnchor="middle"
+        fill="#eed29b"
+        fontSize="10"
+        fontWeight="700"
+        letterSpacing="0.06em"
+      >
+        {item.id.toUpperCase()} · PRIVATE SUITE ({item.capacity} SEATS)
+      </text>
     </g>
   )
 }
 
-export function EditableFloorPlan({ items, editable = false, onChange, onActivate }: Props) {
-  const [selectedId, setSelectedId] = useState<string | null>(items[0]?.id ?? null)
+export function EditableFloorPlan({ items, editable = false, onChange, onActivate, statusFilter = 'all' }: Props) {
+  const visibleItems = items.filter((item) => !item.archived)
+  const [selectedId, setSelectedId] = useState<string | null>(visibleItems[0]?.id ?? null)
+  const [zoom, setZoom] = useState<number>(0.9)
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 40, y: 30 })
+  const [snapGrid, setSnapGrid] = useState<boolean>(true)
+  const [isPanning, setIsPanning] = useState<boolean>(false)
+
   const svgRef = useRef<SVGSVGElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const draggingId = useRef<string | null>(null)
-  const panStart = useRef<{ x: number; y: number; scrollLeft: number; scrollTop: number } | null>(null)
+  const dragOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const isPanningRef = useRef<boolean>(false)
+  const panStart = useRef<{ clientX: number; clientY: number; panX: number; panY: number } | null>(null)
+  const touchDistance = useRef<number | null>(null)
+  const touchOrigin = useRef<{ x: number; y: number } | null>(null)
   const moved = useRef(false)
-  const selected = items.find((item) => item.id === selectedId) ?? null
-  const visibleItems = items.filter((item) => !item.archived)
+
+  const selected = visibleItems.find((item) => item.id === selectedId) ?? null
 
   useEffect(() => {
-    if (!items.some((item) => item.id === selectedId)) setSelectedId(items[0]?.id ?? null)
-  }, [selectedId, items])
+    if (!visibleItems.some((item) => item.id === selectedId)) {
+      setSelectedId(visibleItems[0]?.id ?? null)
+    }
+  }, [selectedId, visibleItems])
+
+  // Coordinate projector: Screen (pixel) -> Endless World (SVG units)
+  const screenToWorld = (clientX: number, clientY: number) => {
+    const wrap = wrapRef.current
+    if (!wrap) return { x: 0, y: 0 }
+    const rect = wrap.getBoundingClientRect()
+    return {
+      x: (clientX - rect.left - pan.x) / zoom,
+      y: (clientY - rect.top - pan.y) / zoom,
+    }
+  }
 
   const updateItem = (id: string, patch: Partial<Unit>) => {
-    if (patch.id && items.some((item) => item.id !== id && item.id.trim().toLowerCase() === patch.id?.trim().toLowerCase())) return
-    onChange?.(items.map((item) => item.id === id ? { ...item, ...patch } as Unit : item))
+    if (
+      patch.id &&
+      items.some(
+        (item) => item.id !== id && item.id.trim().toLowerCase() === patch.id?.trim().toLowerCase()
+      )
+    ) {
+      return
+    }
+    onChange?.(items.map((item) => (item.id === id ? ({ ...item, ...patch } as Unit) : item)))
     if (patch.id && selectedId === id) setSelectedId(patch.id)
   }
 
   const addItem = (kind: Unit['kind']) => {
-    const nextNumber = Math.max(0, ...items.filter((item) => item.kind === kind).map((item) => Number(item.id.match(/\d+/)?.[0] ?? 0))) + 1
-    const id = `${kind} ${nextNumber}`
-    const position = kind === 'Room' ? { x: 815, y: 470 } : kind === 'Couch' ? { x: 810, y: 390 } : { x: 500, y: 300 }
-    const base = { id, status: 'available' as const, capacity: kind === 'Room' ? 4 : 2, ...position, rotation: 0 }
-    const item: Unit = kind === 'Table'
-      ? { ...base, kind, tableType: 'round' }
-      : kind === 'Couch'
-        ? { ...base, kind, couchType: 'loveseat' }
-        : { ...base, kind, roomWidth: 190, roomHeight: 140, tableType: 'round' }
-    onChange?.([...items, item])
-    setSelectedId(item.id)
+    // Generate new unit near current viewport center
+    const wrap = wrapRef.current
+    const rect = wrap?.getBoundingClientRect()
+    const centerWorld =
+      wrap && rect
+        ? screenToWorld(rect.left + wrap.clientWidth / 2, rect.top + wrap.clientHeight / 2)
+        : { x: 500, y: 300 }
+
+    const id = FloorLayoutEngine.generateNextUnitId(kind, items)
+    const posX = snapGrid ? snapToGrid(centerWorld.x, 10) : Math.round(centerWorld.x)
+    const posY = snapGrid ? snapToGrid(centerWorld.y, 10) : Math.round(centerWorld.y)
+
+    const base = {
+      id,
+      status: 'available' as const,
+      capacity: kind === 'Room' ? 4 : 2,
+      x: posX,
+      y: posY,
+      rotation: 0,
+    }
+
+    const newItem: Unit =
+      kind === 'Table'
+        ? { ...base, kind: 'Table', tableType: 'round' }
+        : kind === 'Couch'
+        ? { ...base, kind: 'Couch', couchType: 'loveseat' }
+        : { ...base, kind: 'Room', roomWidth: 190, roomHeight: 140, tableType: 'round' }
+
+    onChange?.([...items, newItem])
+    setSelectedId(newItem.id)
   }
 
+  // Pointer interactions
   const handleItemPointerDown = (event: PointerEvent<SVGGElement>, item: Unit) => {
     setSelectedId(item.id)
     if (!editable) return
     event.preventDefault()
     event.stopPropagation()
     draggingId.current = item.id
-    panStart.current = null
+    isPanningRef.current = false
+    setIsPanning(false)
     moved.current = false
+
+    const world = screenToWorld(event.clientX, event.clientY)
+    dragOffset.current = {
+      x: world.x - item.x,
+      y: world.y - item.y,
+    }
     svgRef.current?.setPointerCapture(event.pointerId)
   }
 
   const handleCanvasPointerDown = (event: PointerEvent<SVGSVGElement>) => {
-    if (!editable || (event.target as Element).closest('.floor-item')) return
-    const wrap = wrapRef.current
-    if (!wrap) return
+    if (!editable) return
+    if ((event.target as Element).closest('.floor-item')) return
     event.preventDefault()
     draggingId.current = null
+    isPanningRef.current = true
+    setIsPanning(true)
     moved.current = false
-    panStart.current = { x: event.clientX, y: event.clientY, scrollLeft: wrap.scrollLeft, scrollTop: wrap.scrollTop }
+    panStart.current = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      panX: pan.x,
+      panY: pan.y,
+    }
     svgRef.current?.setPointerCapture(event.pointerId)
   }
 
   const handlePointerMove = (event: PointerEvent<SVGSVGElement>) => {
-    if (!editable || !svgRef.current) return
-    const wrap = wrapRef.current
-    if (panStart.current && wrap) {
-      const deltaX = event.clientX - panStart.current.x
-      const deltaY = event.clientY - panStart.current.y
-      if (Math.abs(deltaX) + Math.abs(deltaY) > 2) moved.current = true
-      wrap.scrollLeft = panStart.current.scrollLeft - deltaX
-      wrap.scrollTop = panStart.current.scrollTop - deltaY
+    if (!editable) return
+    if (isPanningRef.current && panStart.current) {
+      const dx = event.clientX - panStart.current.clientX
+      const dy = event.clientY - panStart.current.clientY
+      if (Math.abs(dx) + Math.abs(dy) > 3) moved.current = true
+      setPan({
+        x: panStart.current.panX + dx,
+        y: panStart.current.panY + dy,
+      })
       return
     }
-    if (!draggingId.current) return
-    const item = items.find((candidate) => candidate.id === draggingId.current)
+
+    if (!draggingId.current || !svgRef.current) return
+    const item = items.find((c) => c.id === draggingId.current)
     if (!item) return
-    const bounds = svgRef.current.getBoundingClientRect()
-    const scaleX = 1000 / bounds.width
-    const scaleY = 600 / bounds.height
-    const halfWidth = item.kind === 'Room' ? item.roomWidth / 2 + 15 : item.kind === 'Couch' ? 80 : 85
-    const halfHeight = item.kind === 'Room' ? item.roomHeight / 2 + 15 : item.kind === 'Couch' ? 50 : 55
-    const x = Math.min(1000 - halfWidth, Math.max(halfWidth, (event.clientX - bounds.left) * scaleX))
-    const y = Math.min(600 - halfHeight, Math.max(halfHeight, (event.clientY - bounds.top) * scaleY))
+
+    const world = screenToWorld(event.clientX, event.clientY)
+    let nextX = world.x - dragOffset.current.x
+    let nextY = world.y - dragOffset.current.y
+
+    if (snapGrid) {
+      nextX = snapToGrid(nextX, 10)
+      nextY = snapToGrid(nextY, 10)
+    }
+
+    const clamped = clampUnitPosition(item, nextX, nextY)
     moved.current = true
-    updateItem(draggingId.current, { x, y })
+    updateItem(draggingId.current, { x: clamped.x, y: clamped.y })
   }
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (event?: PointerEvent<SVGSVGElement>) => {
+    if (event && svgRef.current?.hasPointerCapture(event.pointerId)) {
+      try {
+        svgRef.current.releasePointerCapture(event.pointerId)
+      } catch {
+        // ignore
+      }
+    }
     draggingId.current = null
+    isPanningRef.current = false
+    setIsPanning(false)
     panStart.current = null
-    window.setTimeout(() => { moved.current = false }, 0)
+    window.setTimeout(() => {
+      moved.current = false
+    }, 50)
   }
 
+  // Smooth Wheel Zoom & Free Two-Finger Pan on desktop (non-passive listener for preventDefault)
+  useEffect(() => {
+    const wrap = wrapRef.current
+    if (!wrap || !editable) return
+
+    const handleWheel = (e: globalThis.WheelEvent) => {
+      e.preventDefault()
+      const rect = wrap.getBoundingClientRect()
+      const cursorX = e.clientX - rect.left
+      const cursorY = e.clientY - rect.top
+
+      if (e.ctrlKey || e.metaKey) {
+        // Pinch trackpad / Ctrl+Wheel: Zoom focused around cursor
+        const zoomDelta = -e.deltaY * 0.006
+        const nextZoom = Math.min(2.5, Math.max(0.35, +(zoom + zoomDelta).toFixed(2)))
+        const scaleChange = nextZoom / zoom
+
+        const nextPanX = cursorX - (cursorX - pan.x) * scaleChange
+        const nextPanY = cursorY - (cursorY - pan.y) * scaleChange
+
+        setZoom(nextZoom)
+        setPan({ x: Math.round(nextPanX), y: Math.round(nextPanY) })
+      } else {
+        // Regular scroll pans the infinite floor
+        setPan((prev) => ({
+          x: prev.x - e.deltaX,
+          y: prev.y - e.deltaY,
+        }))
+      }
+    }
+
+    wrap.addEventListener('wheel', handleWheel, { passive: false })
+    return () => {
+      wrap.removeEventListener('wheel', handleWheel)
+    }
+  }, [editable, zoom, pan])
+
+  // Tablet Multi-touch Pinch to Zoom & Two-Finger Pan
+  const handleTouchStart = (e: TouchEvent<SVGSVGElement>) => {
+    if (!editable) return
+    if (e.touches.length === 2) {
+      const t1 = e.touches[0]
+      const t2 = e.touches[1]
+      touchDistance.current = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY)
+      touchOrigin.current = {
+        x: (t1.clientX + t2.clientX) / 2,
+        y: (t1.clientY + t2.clientY) / 2,
+      }
+    }
+  }
+
+  const handleTouchMove = (e: TouchEvent<SVGSVGElement>) => {
+    if (!editable) return
+    if (e.touches.length === 2 && touchDistance.current !== null && touchOrigin.current !== null) {
+      const t1 = e.touches[0]
+      const t2 = e.touches[1]
+      const newDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY)
+      const newMidX = (t1.clientX + t2.clientX) / 2
+      const newMidY = (t1.clientY + t2.clientY) / 2
+
+      const factor = newDist / touchDistance.current
+      const nextZoom = Math.min(2.5, Math.max(0.35, +(zoom * factor).toFixed(2)))
+
+      const dPanX = newMidX - touchOrigin.current.x
+      const dPanY = newMidY - touchOrigin.current.y
+
+      setZoom(nextZoom)
+      setPan((prev) => ({
+        x: Math.round(prev.x + dPanX),
+        y: Math.round(prev.y + dPanY),
+      }))
+
+      touchDistance.current = newDist
+      touchOrigin.current = { x: newMidX, y: newMidY }
+    }
+  }
+
+  const handleTouchEnd = () => {
+    touchDistance.current = null
+    touchOrigin.current = null
+  }
+
+  // Keyboard navigation & nudging
   const handleKeyDown = (event: KeyboardEvent<SVGGElement>, item: Unit) => {
-    if (event.key !== 'Enter' && event.key !== ' ') return
-    event.preventDefault()
-    if (editable) setSelectedId(item.id)
-    else onActivate?.(item)
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      if (editable) setSelectedId(item.id)
+      else onActivate?.(item)
+      return
+    }
+
+    if (!editable) return
+
+    const step = event.shiftKey ? 20 : snapGrid ? 10 : 5
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      const clamped = clampUnitPosition(item, item.x, item.y - step)
+      updateItem(item.id, { y: clamped.y })
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      const clamped = clampUnitPosition(item, item.x, item.y + step)
+      updateItem(item.id, { y: clamped.y })
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      const clamped = clampUnitPosition(item, item.x - step, item.y)
+      updateItem(item.id, { x: clamped.x })
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault()
+      const clamped = clampUnitPosition(item, item.x + step, item.y)
+      updateItem(item.id, { x: clamped.x })
+    } else if (event.key === 'r' || event.key === 'R') {
+      event.preventDefault()
+      updateItem(item.id, { rotation: ((item.rotation ?? 0) + 45) % 360 })
+    }
   }
 
   const handleClick = (item: Unit) => {
@@ -262,170 +903,936 @@ export function EditableFloorPlan({ items, editable = false, onChange, onActivat
     else onActivate?.(item)
   }
 
+  const handleZoomIn = () => setZoom((prev) => Math.min(2.5, +(prev + 0.15).toFixed(2)))
+  const handleZoomOut = () => setZoom((prev) => Math.max(0.35, +(prev - 0.15).toFixed(2)))
+  const handleResetZoom = () => {
+    setZoom(1)
+    setPan({ x: 40, y: 30 })
+  }
+
+  // Smart Camera: Fit all tables and units centered onto the viewport
+  const handleFitAll = useCallback(() => {
+    if (!wrapRef.current) return
+    const rect = wrapRef.current.getBoundingClientRect()
+    const bounds = calculateFloorBoundingBox(items)
+    const padding = 70
+
+    const scaleX = (rect.width - padding * 2) / bounds.width
+    const scaleY = (rect.height - padding * 2) / bounds.height
+    const targetZoom = Math.min(1.8, Math.max(0.4, Math.min(scaleX, scaleY)))
+
+    const targetPanX = rect.width / 2 - bounds.centerX * targetZoom
+    const targetPanY = rect.height / 2 - bounds.centerY * targetZoom
+
+    setZoom(+targetZoom.toFixed(2))
+    setPan({ x: Math.round(targetPanX), y: Math.round(targetPanY) })
+  }, [items])
+
+  // Auto-fit and freeze canvas for hostess stand view
+  useEffect(() => {
+    if (!editable) {
+      const timer = setTimeout(() => {
+        handleFitAll()
+      }, 60)
+      const handleResize = () => handleFitAll()
+      window.addEventListener('resize', handleResize)
+      return () => {
+        clearTimeout(timer)
+        window.removeEventListener('resize', handleResize)
+      }
+    }
+  }, [editable, items, handleFitAll])
+
   const availableCount = visibleItems.filter((item) => item.status === 'available').length
 
   return (
-    <section className={`floor-plan ${editable ? 'is-editable' : ''}`} aria-label={editable ? 'Editable restaurant floor plan' : 'Restaurant floor plan'}>
+    <section
+      className={`floor-plan ${editable ? 'is-editable' : ''}`}
+      aria-label={editable ? 'Editable infinite restaurant floor plan' : 'Restaurant floor plan canvas'}
+    >
       <div className="floor-plan-main">
         {editable && (
-          <div className="floor-plan-toolbar">
-            <div>
-              <strong>Dining room</strong>
-              <span>Drag furniture to move it. Drag the open floor to pan; scrolling pauses while you work.</span>
-            </div>
-            <div className="floor-add-actions">
-              <button className="floor-action" type="button" onClick={() => addItem('Table')}>＋ Table</button>
-              <button className="floor-action" type="button" onClick={() => addItem('Couch')}>＋ Couch</button>
-              <button className="floor-action" type="button" onClick={() => addItem('Room')}>＋ Room</button>
-            </div>
-          </div>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: 1.5,
+              mb: 2,
+            }}
+          >
+            <Box>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontFamily: 'Playfair Display, Georgia, serif',
+                  color: '#e6d19a',
+                  fontWeight: 600,
+                }}
+              >
+                Endless Floor Canvas
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#8e968b' }}>
+                Infinite architectural space. Pan freely, pinch to zoom, and place spaces anywhere.
+              </Typography>
+            </Box>
+
+            {/* Strict 3-Unit Add Buttons */}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                onClick={() => addItem('Table')}
+                sx={{
+                  bgcolor: '#d7b46a',
+                  color: '#1a1811',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  minHeight: 40,
+                  '&:hover': { bgcolor: '#e4c77e' },
+                }}
+              >
+                + Add Table
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                onClick={() => addItem('Couch')}
+                sx={{
+                  bgcolor: '#d7b46a',
+                  color: '#1a1811',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  minHeight: 40,
+                  '&:hover': { bgcolor: '#e4c77e' },
+                }}
+              >
+                + Add Couch
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                onClick={() => addItem('Room')}
+                sx={{
+                  bgcolor: '#d7b46a',
+                  color: '#1a1811',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  minHeight: 40,
+                  '&:hover': { bgcolor: '#e4c77e' },
+                }}
+              >
+                + Add Room
+              </Button>
+            </Box>
+          </Box>
         )}
-        <div className="floor-svg-wrap" ref={wrapRef}>
+
+        <div
+          className="floor-svg-wrap"
+          ref={wrapRef}
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: editable ? '620px' : '560px',
+            overflow: 'hidden',
+            borderRadius: '8px',
+            backgroundColor: '#111412',
+            border: '1px solid rgba(215, 180, 106, 0.18)',
+            boxShadow: 'inset 0 0 40px rgba(0, 0, 0, 0.45)',
+            overscrollBehavior: editable ? 'contain' : 'auto',
+          }}
+        >
+          {/* Canvas Floating HUD Controls */}
+          {editable ? (
+            <Paper
+              elevation={2}
+              className="floor-hud"
+              sx={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 0.75,
+                py: 0.25,
+                borderRadius: '6px',
+                bgcolor: 'rgba(20, 24, 21, 0.95)',
+                backdropFilter: 'blur(8px)',
+                borderColor: 'rgba(215, 180, 106, 0.25)',
+                borderWidth: 1,
+                borderStyle: 'solid',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
+                '& .MuiIconButton-root': {
+                  width: 28,
+                  height: 28,
+                  minWidth: 28,
+                  minHeight: 28,
+                  p: 0.25,
+                  borderRadius: '4px',
+                  color: '#eee9df',
+                  '&:hover': {
+                    bgcolor: 'rgba(215, 180, 106, 0.15)',
+                    color: '#d7b46a',
+                  },
+                },
+                '& svg': {
+                  width: '15px !important',
+                  height: '15px !important',
+                  fontSize: '15px !important',
+                  display: 'block',
+                },
+              }}
+            >
+              <Tooltip title="Zoom in">
+                <IconButton size="small" onClick={handleZoomIn} aria-label="Zoom in floor canvas">
+                  <ZoomInIcon />
+                </IconButton>
+              </Tooltip>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#d7b46a',
+                  fontWeight: 700,
+                  px: 0.5,
+                  fontSize: '0.72rem',
+                  minWidth: 38,
+                  textAlign: 'center',
+                }}
+              >
+                {Math.round(zoom * 100)}%
+              </Typography>
+              <Tooltip title="Zoom out">
+                <IconButton size="small" onClick={handleZoomOut} aria-label="Zoom out floor canvas">
+                  <ZoomOutIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Fit all spaces to screen">
+                <IconButton size="small" onClick={handleFitAll} aria-label="Fit all spaces to screen">
+                  <FitScreenIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Reset View (100%)">
+                <IconButton size="small" onClick={handleResetZoom} aria-label="Reset floor canvas view">
+                  <RestartAltIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={snapGrid ? 'Snap to grid (10px) ON' : 'Snap to grid OFF'}>
+                <IconButton
+                  size="small"
+                  onClick={() => setSnapGrid((prev) => !prev)}
+                  aria-label={snapGrid ? 'Disable snap to grid' : 'Enable snap to grid'}
+                  sx={{ color: snapGrid ? '#d7b46a !important' : '#8e968b !important' }}
+                >
+                  {snapGrid ? <GridOnIcon /> : <GridOffIcon />}
+                </IconButton>
+              </Tooltip>
+            </Paper>
+          ) : (
+            <Paper
+              elevation={2}
+              className="floor-hud"
+              sx={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.25,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: '6px',
+                bgcolor: 'rgba(20, 24, 21, 0.95)',
+                backdropFilter: 'blur(8px)',
+                borderColor: 'rgba(215, 180, 106, 0.25)',
+                borderWidth: 1,
+                borderStyle: 'solid',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#4ade80' }} />
+                <Typography variant="caption" sx={{ color: '#eee9df', fontSize: '0.75rem', fontWeight: 600 }}>
+                  {availableCount} Free
+                </Typography>
+              </Box>
+              <Box sx={{ width: 1, height: 12, bgcolor: 'rgba(255, 255, 255, 0.12)' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#a5b4fc' }} />
+                <Typography variant="caption" sx={{ color: '#eee9df', fontSize: '0.75rem', fontWeight: 600 }}>
+                  {visibleItems.filter((i) => i.status === 'seated').length} Seated
+                </Typography>
+              </Box>
+              <Box sx={{ width: 1, height: 12, bgcolor: 'rgba(255, 255, 255, 0.12)' }} />
+              <Tooltip title="Recenter floor plan to frame">
+                <Button
+                  size="small"
+                  onClick={handleFitAll}
+                  startIcon={<FitScreenIcon sx={{ fontSize: '15px !important' }} />}
+                  sx={{
+                    p: '2px 8px',
+                    minWidth: 'auto',
+                    fontSize: '0.72rem',
+                    color: '#d7b46a',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    borderRadius: '4px',
+                    bgcolor: 'rgba(215, 180, 106, 0.08)',
+                    '&:hover': { bgcolor: 'rgba(215, 180, 106, 0.18)' },
+                  }}
+                >
+                  Center View
+                </Button>
+              </Tooltip>
+            </Paper>
+          )}
+
+          {/* Coordinate & Jump-to-Center Indicator */}
+          {editable ? (
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: 10,
+                left: 10,
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                px: 1,
+                py: 0.4,
+                borderRadius: '6px',
+                bgcolor: 'rgba(20, 24, 21, 0.9)',
+                backdropFilter: 'blur(6px)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: '#8e968b',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+              }}
+            >
+              <span>
+                Offset: {Math.round(-pan.x / zoom)}, {Math.round(-pan.y / zoom)}
+              </span>
+              <span style={{ color: '#d7b46a' }}>·</span>
+              <Button
+                size="small"
+                onClick={handleFitAll}
+                sx={{
+                  p: 0,
+                  minWidth: 'auto',
+                  fontSize: '0.72rem',
+                  color: '#d7b46a',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  '&:hover': { textDecoration: 'underline' },
+                }}
+              >
+                Fit Floor (⛶)
+              </Button>
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: 10,
+                left: 10,
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
+                px: 1.25,
+                py: 0.4,
+                borderRadius: '6px',
+                bgcolor: 'rgba(20, 24, 21, 0.9)',
+                backdropFilter: 'blur(6px)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: '#8e968b',
+                fontSize: '0.75rem',
+              }}
+            >
+              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#4ade80' }} />
+              <Typography variant="caption" sx={{ color: '#d7b46a', fontWeight: 700, fontSize: '0.72rem' }}>
+                Floor Stand
+              </Typography>
+              <span style={{ color: 'rgba(255, 255, 255, 0.2)' }}>·</span>
+              <Typography variant="caption" sx={{ color: '#a1a89e', fontSize: '0.72rem' }}>
+                Tap any table for instant seating or release
+              </Typography>
+            </Box>
+          )}
+
+          {/* Endless Hardware-Accelerated SVG Canvas */}
           <svg
             ref={svgRef}
-            viewBox="0 0 1000 600"
+            className="floor-canvas-svg"
+            width="100%"
+            height="100%"
             role="group"
-            aria-label={editable ? 'Restaurant floor plan; drag an empty area to pan while editing' : 'Restaurant floor plan; swipe to view all spaces'}
-            onPointerDown={handleCanvasPointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
+            aria-label={
+              editable
+                ? 'Restaurant floor editor canvas; drag furniture to move it, drag open floor to pan'
+                : 'Restaurant floor overview; select any table for quick seating or details'
+            }
+            onPointerDown={editable ? handleCanvasPointerDown : undefined}
+            onPointerMove={editable ? handlePointerMove : undefined}
+            onPointerUp={editable ? handlePointerUp : undefined}
+            onPointerCancel={editable ? handlePointerUp : undefined}
+            onTouchStart={editable ? handleTouchStart : undefined}
+            onTouchMove={editable ? handleTouchMove : undefined}
+            onTouchEnd={editable ? handleTouchEnd : undefined}
+            style={{
+              display: 'block',
+              width: '100%',
+              height: '100%',
+              cursor: isPanning ? 'grabbing' : editable ? 'grab' : 'default',
+              userSelect: 'none',
+              touchAction: editable ? 'none' : 'pan-y',
+            }}
           >
             <defs>
-              <pattern id="floor-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#c9cbbf" strokeOpacity="0.055" strokeWidth="1" />
+              {/* Infinite Architectural Floor Pattern */}
+              <pattern id="floor-grid-small" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#d7b46a" strokeOpacity="0.035" strokeWidth="1" />
               </pattern>
+              <pattern id="floor-grid" width="100" height="100" patternUnits="userSpaceOnUse">
+                <rect width="100" height="100" fill="url(#floor-grid-small)" />
+                <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#d7b46a" strokeOpacity="0.075" strokeWidth="1.2" />
+              </pattern>
+
+              {/* Room Flooring Pattern */}
+              <pattern id="room-floor" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 0 10 L 10 0 L 20 10 L 10 20 Z" fill="none" stroke="#d7b46a" strokeOpacity="0.06" strokeWidth="1" />
+              </pattern>
+
+              {/* Table Top Walnut Gradient */}
               <linearGradient id="table-top" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor="#b98955" />
-                <stop offset=".48" stopColor="#9a6d42" />
-                <stop offset="1" stopColor="#785134" />
+                <stop offset="0" stopColor="#b4834f" />
+                <stop offset="0.5" stopColor="#8c5f37" />
+                <stop offset="1" stopColor="#674325" />
               </linearGradient>
+
+              {/* Chair Seat Upholstery Gradient */}
               <linearGradient id="chair-seat" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#d1ae78" />
-                <stop offset="1" stopColor="#9e754b" />
+                <stop offset="0" stopColor="#d7b46a" />
+                <stop offset="1" stopColor="#9a733e" />
               </linearGradient>
+
+              {/* Couch Leather Cushion Gradient */}
               <linearGradient id="couch-cushion" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#cf806b" />
-                <stop offset="1" stopColor="#a95f53" />
+                <stop offset="0" stopColor="#b56350" />
+                <stop offset="1" stopColor="#7a3729" />
               </linearGradient>
+
+              {/* Coffee Table Dark Bronze Glass */}
+              <linearGradient id="coffee-table" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#302923" />
+                <stop offset="1" stopColor="#1e1814" />
+              </linearGradient>
+
+              {/* Ambient Chandelier Radial Glow */}
+              <radialGradient id="room-glow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#ffd885" stopOpacity="0.18" />
+                <stop offset="60%" stopColor="#d7b46a" stopOpacity="0.06" />
+                <stop offset="100%" stopColor="#181d19" stopOpacity="0" />
+              </radialGradient>
             </defs>
-            <rect width="1000" height="600" rx="18" fill="#151a16" />
-            <rect width="1000" height="600" rx="18" fill="url(#floor-grid)" />
-            <rect x="24" y="24" width="952" height="552" rx="12" fill="none" stroke="#81877b" strokeOpacity="0.16" strokeWidth="2" />
-            <text x="48" y="52" fill="#899188" fontSize="12" letterSpacing="2" pointerEvents="none">SAFFRON &amp; CEDAR · DINING ROOM</text>
-            <text x="48" y="565" fill="#6e776e" fontSize="11" pointerEvents="none">ENTRANCE</text>
-            <path d="M 40 545 L 40 490 Q 40 460 70 460 L 105 460" fill="none" stroke="#81877b" strokeOpacity="0.35" strokeWidth="2" pointerEvents="none" />
-            {visibleItems.map((item) => {
-              const palette = statusColors[item.status]
-              const isSelected = editable && selectedId === item.id
-              const itemLabel = item.kind === 'Table'
-                ? `${item.id}, ${SHAPES.find((shape) => shape.value === item.tableType)?.label} table`
-                : item.kind === 'Couch'
-                  ? `${item.id}, ${item.couchType} couch`
-                  : `${item.id}, enclosed private dining room`
-              return (
-                <g
-                  key={item.id}
-                  transform={`translate(${item.x} ${item.y}) rotate(${item.rotation})`}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`${itemLabel} for ${item.capacity} seats, ${palette.label}`}
-                  className={`floor-item ${isSelected ? 'selected' : ''}`}
-                  onPointerDown={(event) => handleItemPointerDown(event, item)}
-                  onClick={() => handleClick(item)}
-                  onKeyDown={(event) => handleKeyDown(event, item)}
-                >
-                  {isSelected && <circle r={item.kind === 'Room' ? Math.max(item.roomWidth, item.roomHeight) / 2 + 12 : item.kind === 'Couch' ? 82 : 82} fill="none" stroke="#f0d68e" strokeOpacity=".7" strokeWidth="1.5" strokeDasharray="5 5" pointerEvents="none" />}
-                  {item.kind === 'Table' && <TableAsset item={item} />}
-                  {item.kind === 'Couch' && <CouchAsset item={item} />}
-                  {item.kind === 'Room' && <RoomAsset item={item} />}
-                  <circle cx={item.kind === 'Room' ? item.roomWidth / 2 - 13 : item.kind === 'Couch' ? 38 : 24} cy={item.kind === 'Room' ? -item.roomHeight / 2 + 13 : item.kind === 'Couch' ? -22 : -22} r="5" fill={palette.stroke} stroke="#151a16" strokeWidth="2" pointerEvents="none" />
-                </g>
-              )
-            })}
+
+            {/* Transform Container with Hardware-Accelerated SVG Matrix */}
+            <g transform={`matrix(${zoom} 0 0 ${zoom} ${pan.x} ${pan.y})`}>
+              {/* Massive Infinite Plane (covers 1,000,000 x 1,000,000 units with zero lag) */}
+              <rect x="-500000" y="-500000" width="1000000" height="1000000" fill="#121613" />
+              <rect x="-500000" y="-500000" width="1000000" height="1000000" fill="url(#floor-grid)" />
+
+              {/* Primary Dining Room Zone Guide */}
+              <rect
+                x="20"
+                y="20"
+                width="960"
+                height="560"
+                rx="4"
+                fill="none"
+                stroke="#d7b46a"
+                strokeOpacity="0.15"
+                strokeWidth="2"
+                strokeDasharray="8 6"
+              />
+              <text x="44" y="52" fill="#d7b46a" fillOpacity="0.55" fontSize="12" letterSpacing="2" fontWeight="700">
+                SAFFRON &amp; CEDAR · MAIN DINING HALL
+              </text>
+              <text x="44" y="560" fill="#8e968b" fillOpacity="0.6" fontSize="11" letterSpacing="1">
+                HOST STAND &amp; GRAND FOYER
+              </text>
+
+              {/* Render Visible Furniture Items */}
+              {visibleItems.map((item) => {
+                const palette = statusColors[item.status]
+                const isSelected = editable && selectedId === item.id
+                const isFilteredOut = statusFilter && statusFilter !== 'all' && item.status !== statusFilter
+                const itemLabel =
+                  item.kind === 'Table'
+                    ? `${item.id}, ${SHAPES.find((shape) => shape.value === item.tableType)?.label} table`
+                    : item.kind === 'Couch'
+                    ? `${item.id}, ${item.couchType} lounge couch`
+                    : `${item.id}, enclosed private dining suite`
+
+                return (
+                  <g
+                    key={item.id}
+                    transform={`translate(${item.x} ${item.y}) rotate(${item.rotation})`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${itemLabel} for ${item.capacity} guests, status: ${palette.label}`}
+                    className={`floor-item ${isSelected ? 'selected' : ''}`}
+                    style={{
+                      opacity: isFilteredOut ? 0.28 : 1,
+                      transition: 'opacity 0.2s ease',
+                      cursor: 'pointer',
+                    }}
+                    onPointerDown={(event) => handleItemPointerDown(event, item)}
+                    onClick={() => handleClick(item)}
+                    onKeyDown={(event) => handleKeyDown(event, item)}
+                  >
+                    {/* Selected Unit Accent Halo & Rotation Anchor */}
+                    {isSelected && (
+                      <g pointerEvents="none">
+                        <circle
+                          r={
+                            item.kind === 'Room'
+                              ? Math.max(item.roomWidth, item.roomHeight) / 2 + 16
+                              : item.kind === 'Couch'
+                              ? 90
+                              : 88
+                          }
+                          fill="none"
+                          stroke="#d7b46a"
+                          strokeOpacity="0.8"
+                          strokeWidth="2"
+                          strokeDasharray="6 4"
+                        />
+                        {/* Top Rotation Pin Anchor */}
+                        <circle
+                          cx="0"
+                          cy={
+                            item.kind === 'Room'
+                              ? -item.roomHeight / 2 - 24
+                              : item.kind === 'Couch'
+                              ? -62
+                              : -60
+                          }
+                          r="7"
+                          fill="#d7b46a"
+                          stroke="#1a1811"
+                          strokeWidth="2"
+                        />
+                      </g>
+                    )}
+
+                    {/* Strict 3 Unit Renderers */}
+                    {item.kind === 'Table' && <RealisticTable item={item} />}
+                    {item.kind === 'Couch' && <RealisticCouch item={item} />}
+                    {item.kind === 'Room' && <RealisticRoom item={item} />}
+
+                    {/* Status Indicator Dot */}
+                    <circle
+                      cx={
+                        item.kind === 'Room'
+                          ? item.roomWidth / 2 - 14
+                          : item.kind === 'Couch'
+                          ? 40
+                          : 26
+                      }
+                      cy={
+                        item.kind === 'Room'
+                          ? -item.roomHeight / 2 + 14
+                          : item.kind === 'Couch'
+                          ? -24
+                          : -24
+                      }
+                      r="5.5"
+                      fill={palette.stroke}
+                      stroke="#141915"
+                      strokeWidth="2"
+                      pointerEvents="none"
+                    />
+                  </g>
+                )
+              })}
+            </g>
           </svg>
         </div>
+
+        {/* Floor Plan Footer Legend */}
         <div className="floor-legend" aria-label="Space status legend">
           {Object.entries(statusColors).map(([status, palette]) => (
-            <span key={status}><i style={{ background: palette.stroke }} />{palette.label}</span>
+            <span key={status}>
+              <i style={{ background: palette.stroke }} />
+              {palette.label}
+            </span>
           ))}
-          <span className="floor-availability">{availableCount} of {visibleItems.length} spaces available</span>
-          <span className="floor-swipe-hint">{editable ? 'Drag empty floor to pan the plan.' : 'Swipe horizontally to view all spaces.'}</span>
+          <span className="floor-availability">
+            {availableCount} of {visibleItems.length} spaces available
+          </span>
+          {editable ? (
+            <span className="floor-swipe-hint">
+              Drag floor to pan infinitely · Pinch or scroll to zoom · Click (⛶) to fit all spaces.
+            </span>
+          ) : (
+            <span className="floor-swipe-hint">
+              Stable dining room layout · Tap a table for instant seating, arrivals, or table release.
+            </span>
+          )}
         </div>
       </div>
 
+      {/* Selected Space Inspector Sidebar (MUI Paper) */}
       {editable && (
-        <aside className="floor-inspector" aria-label="Selected space settings">
+        <Paper
+          variant="outlined"
+          component="aside"
+          aria-label="Selected space settings"
+          sx={{
+            bgcolor: '#191e1a',
+            borderColor: 'rgba(215, 180, 106, 0.25)',
+            borderRadius: '6px',
+            p: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1.5,
+          }}
+        >
           {selected ? (
             <>
-              <div className="inspector-eyebrow">{selected.kind} settings</div>
-              <h3>{selected.id}</h3>
-              <label className="floor-field">Name
-                <input value={selected.id} maxLength={80} onChange={(event) => updateItem(selected.id, { id: event.target.value })} />
-              </label>
-              {selected.kind === 'Table' && <label className="floor-field">Table shape
-                <select value={selected.tableType} onChange={(event) => updateItem(selected.id, { tableType: event.target.value as TableShape })}>
-                  {SHAPES.map((shape) => <option key={shape.value} value={shape.value}>{shape.label}</option>)}
-                </select>
-              </label>}
-              {selected.kind === 'Couch' && <label className="floor-field">Couch style
-                <select value={selected.couchType} onChange={(event) => updateItem(selected.id, { couchType: event.target.value as CouchShape })}>
-                  {COUCH_SHAPES.map((shape) => <option key={shape.value} value={shape.value}>{shape.label}</option>)}
-                </select>
-              </label>}
-              {selected.kind === 'Room' && <>
-                <label className="floor-field">Room width
-                  <input type="number" min={150} max={320} step={10} value={selected.roomWidth} onChange={(event) => updateItem(selected.id, { roomWidth: Math.min(320, Math.max(150, Number(event.target.value) || 150)) })} />
-                </label>
-                <label className="floor-field">Room depth
-                  <input type="number" min={120} max={240} step={10} value={selected.roomHeight} onChange={(event) => updateItem(selected.id, { roomHeight: Math.min(240, Math.max(120, Number(event.target.value) || 120)) })} />
-                </label>
-                <label className="floor-field">Dining table shape
-                  <select value={selected.tableType} onChange={(event) => updateItem(selected.id, { tableType: event.target.value as TableShape })}>
-                    {SHAPES.map((shape) => <option key={shape.value} value={shape.value}>{shape.label}</option>)}
-                  </select>
-                </label>
-              </>}
-              <label className="floor-field">Visible seats
-                <input type="number" min={1} max={30} value={selected.capacity} onChange={(event) => updateItem(selected.id, { capacity: Math.min(30, Math.max(1, Number(event.target.value) || 1)) })} />
-              </label>
-              <label className="floor-field">Service status
-                <select value={selected.status} onChange={(event) => updateItem(selected.id, { status: event.target.value as Unit['status'] })}>
-                  <option value="available">Available</option>
-                  <option value="seated">Seated</option>
-                  <option value="prep">Prep needed</option>
-                  <option value="blocked">Out of service</option>
-                </select>
-              </label>
-              <div className="floor-inspector-actions">
-                <button className="floor-action secondary" type="button" onClick={() => updateItem(selected.id, { rotation: (selected.rotation + 45) % 360 })}>Rotate</button>
-                <button className="floor-action remove" type="button" onClick={() => {
-                  const next = items.filter((item) => item.id !== selected.id)
-                  onChange?.(next)
-                  setSelectedId(next[0]?.id ?? null)
-                }}>Remove</button>
-              </div>
-              <p className="floor-hint">Position: {Math.round(selected.x)}, {Math.round(selected.y)} · drag the furniture to move it.</p>
+              <Box>
+                <Typography
+                  variant="overline"
+                  sx={{
+                    color: '#d7b46a',
+                    letterSpacing: '0.12em',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  {selected.kind} Inspector
+                </Typography>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontFamily: 'Playfair Display, Georgia, serif',
+                    color: '#f5f2ea',
+                    fontWeight: 700,
+                  }}
+                >
+                  {selected.id}
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Typography variant="caption" sx={{ color: '#8e968b' }}>
+                  Label
+                </Typography>
+                <TextField
+                  size="small"
+                  value={selected.id}
+                  slotProps={{ htmlInput: { maxLength: 80 } }}
+                  onChange={(e) => updateItem(selected.id, { id: e.target.value })}
+                  sx={{ bgcolor: '#141916' }}
+                />
+              </Box>
+
+              {/* Table Specific Settings */}
+              {selected.kind === 'Table' && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Typography variant="caption" sx={{ color: '#8e968b' }}>
+                    Table Shape
+                  </Typography>
+                  <Select
+                    size="small"
+                    value={selected.tableType}
+                    onChange={(e) =>
+                      updateItem(selected.id, { tableType: e.target.value as TableShape })
+                    }
+                    sx={{ bgcolor: '#141916' }}
+                  >
+                    {SHAPES.map((shape) => (
+                      <MenuItem key={shape.value} value={shape.value}>
+                        {shape.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Box>
+              )}
+
+              {/* Couch Specific Settings */}
+              {selected.kind === 'Couch' && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Typography variant="caption" sx={{ color: '#8e968b' }}>
+                    Couch Style
+                  </Typography>
+                  <Select
+                    size="small"
+                    value={selected.couchType}
+                    onChange={(e) =>
+                      updateItem(selected.id, { couchType: e.target.value as CouchShape })
+                    }
+                    sx={{ bgcolor: '#141916' }}
+                  >
+                    {COUCH_SHAPES.map((shape) => (
+                      <MenuItem key={shape.value} value={shape.value}>
+                        {shape.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </Box>
+              )}
+
+              {/* Room Specific Settings */}
+              {selected.kind === 'Room' && (
+                <>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Typography variant="caption" sx={{ color: '#8e968b' }}>
+                      Room width (px)
+                    </Typography>
+                    <TextField
+                      size="small"
+                      type="number"
+                      value={selected.roomWidth}
+                      slotProps={{ htmlInput: { min: 150, max: 400, step: 10 } }}
+                      onChange={(e) =>
+                        updateItem(selected.id, {
+                          roomWidth: Math.min(400, Math.max(150, Number(e.target.value) || 150)),
+                        })
+                      }
+                      sx={{ bgcolor: '#141916' }}
+                    />
+                  </Box>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Typography variant="caption" sx={{ color: '#8e968b' }}>
+                      Room depth (px)
+                    </Typography>
+                    <TextField
+                      size="small"
+                      type="number"
+                      value={selected.roomHeight}
+                      slotProps={{ htmlInput: { min: 120, max: 320, step: 10 } }}
+                      onChange={(e) =>
+                        updateItem(selected.id, {
+                          roomHeight: Math.min(320, Math.max(120, Number(e.target.value) || 120)),
+                        })
+                      }
+                      sx={{ bgcolor: '#141916' }}
+                    />
+                  </Box>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Typography variant="caption" sx={{ color: '#8e968b' }}>
+                      Dining table shape
+                    </Typography>
+                    <Select
+                      size="small"
+                      value={selected.tableType}
+                      onChange={(e) =>
+                        updateItem(selected.id, { tableType: e.target.value as TableShape })
+                      }
+                      sx={{ bgcolor: '#141916' }}
+                    >
+                      {SHAPES.map((shape) => (
+                        <MenuItem key={shape.value} value={shape.value}>
+                          {shape.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </Box>
+                </>
+              )}
+
+              {/* Capacity Controls (Dynamically updates seats on the canvas in real-time) */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="caption" sx={{ color: '#8e968b' }}>
+                    Seating Capacity
+                  </Typography>
+                  <Chip
+                    size="small"
+                    label={`${selected.capacity} seats`}
+                    sx={{
+                      height: 20,
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      bgcolor: 'rgba(215, 180, 106, 0.15)',
+                      color: '#ebd29b',
+                    }}
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <IconButton
+                    size="small"
+                    aria-label="Decrease capacity"
+                    onClick={() => updateItem(selected.id, { capacity: Math.max(1, selected.capacity - 1) })}
+                    sx={{ color: '#eee9df', bgcolor: '#141916' }}
+                  >
+                    <RemoveIcon fontSize="small" />
+                  </IconButton>
+                  <Slider
+                    value={selected.capacity}
+                    aria-label="Table capacity"
+                    min={1}
+                    max={24}
+                    step={1}
+                    onChange={(_, val) => updateItem(selected.id, { capacity: val as number })}
+                    sx={{ color: '#d7b46a' }}
+                  />
+                  <IconButton
+                    size="small"
+                    aria-label="Increase capacity"
+                    onClick={() => updateItem(selected.id, { capacity: Math.min(24, selected.capacity + 1) })}
+                    sx={{ color: '#eee9df', bgcolor: '#141916' }}
+                  >
+                    <AddIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              </Box>
+
+              {/* Status Select */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Typography variant="caption" sx={{ color: '#8e968b' }}>
+                  Status
+                </Typography>
+                <Select
+                  size="small"
+                  value={selected.status}
+                  onChange={(e) => updateItem(selected.id, { status: e.target.value as Unit['status'] })}
+                  sx={{ bgcolor: '#141916' }}
+                >
+                  <MenuItem value="available">Available</MenuItem>
+                  <MenuItem value="seated">Seated</MenuItem>
+                  <MenuItem value="prep">Prep needed</MenuItem>
+                  <MenuItem value="blocked">Out of service</MenuItem>
+                </Select>
+              </Box>
+
+              {/* Action Buttons */}
+              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                <Button
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  startIcon={<RotateRightIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => updateItem(selected.id, { rotation: ((selected.rotation ?? 0) + 45) % 360 })}
+                  sx={{
+                    color: '#eee9df',
+                    borderColor: 'rgba(255, 255, 255, 0.15)',
+                    textTransform: 'none',
+                    minHeight: 40,
+                  }}
+                >
+                  Rotate 45°
+                </Button>
+                <Button
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DeleteOutlinedIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => {
+                    const next = items.map((item) =>
+                      item.id === selected.id ? ({ ...item, archived: true } as Unit) : item
+                    )
+                    onChange?.(next)
+                    const nextVisible = next.filter((item) => !item.archived)
+                    setSelectedId(nextVisible[0]?.id ?? null)
+                  }}
+                  sx={{ textTransform: 'none', minHeight: 40 }}
+                >
+                  Remove
+                </Button>
+              </Box>
+
+              <Typography variant="caption" sx={{ color: '#7a8276', mt: 0.5 }}>
+                Coordinates: ({Math.round(selected.x)}, {Math.round(selected.y)}) · Angle: {selected.rotation ?? 0}°
+              </Typography>
             </>
           ) : (
-            <div className="floor-empty">Add or select furniture to edit the floor.</div>
+            <Typography variant="body2" sx={{ color: '#8e968b', py: 2 }}>
+              Select any table, couch, or room to inspect and customize.
+            </Typography>
           )}
-        </aside>
+        </Paper>
       )}
 
       <style jsx>{`
-        .floor-plan{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:14px;margin:0 0 18px;align-items:start}
-        .floor-plan:not(.is-editable){display:block}
-        .floor-plan-main{min-width:0;border:1px solid #343b35;background:#191e1a;border-radius:14px;padding:14px}
-        .floor-plan-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:13px}
-        .floor-plan-toolbar div:first-child{display:flex;flex-direction:column;gap:4px}.floor-plan-toolbar strong{font:500 17px Georgia,serif;color:#e6d19a}.floor-plan-toolbar span{font-size:11px;color:#92998f}
-        .floor-add-actions{display:flex;gap:7px;flex-wrap:wrap}.floor-action{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:0 12px;border:1px solid #806d42;border-radius:9px;background:#d7b46a;color:#241e11;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer}
-        .floor-action:hover{background:#e5c981}.floor-action.secondary{background:#242a25;color:#e3dfd3;border-color:#434a42}.floor-action.remove{background:transparent;color:#e19385;border-color:#69413b}
-        .floor-svg-wrap{width:100%;overflow:auto;border-radius:12px;overscroll-behavior:contain}.floor-svg-wrap svg{display:block;width:100%;height:auto;touch-action:pan-x pan-y}.is-editable .floor-svg-wrap svg{touch-action:none;cursor:grab}.is-editable .floor-svg-wrap svg:active{cursor:grabbing}.floor-item{outline:none;cursor:pointer;touch-action:auto;transition:filter .15s}.is-editable .floor-item{touch-action:none}.floor-item:hover{filter:brightness(1.1)}.floor-item:focus-visible{filter:brightness(1.18)}.floor-item.selected{cursor:grab}.floor-item.selected:active{cursor:grabbing}
-        .floor-legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:13px 2px 1px;color:#a0a79d;font-size:10px}.floor-legend span{display:flex;align-items:center;gap:6px}.floor-legend i{width:8px;height:8px;border-radius:50%}.floor-availability{margin-left:auto;color:#d1bb7d}.floor-swipe-hint{display:none;color:#8b9488}
-        .floor-inspector{border:1px solid #353d35;background:#1d231e;border-radius:13px;padding:15px}.inspector-eyebrow{font-size:9px;color:#d6b66f;text-transform:uppercase;letter-spacing:.14em}.floor-inspector h3{font:500 19px Georgia,serif;color:#f0ece1;margin:7px 0 16px}.floor-field{display:flex;flex-direction:column;gap:6px;margin:12px 0;color:#a4aa9e;font-size:10px}.floor-field input,.floor-field select{width:100%;height:37px;border:1px solid #414840;border-radius:8px;background:#141916;color:#eee9df;padding:0 9px;font:inherit;font-size:12px}.floor-inspector-actions{display:flex;gap:7px;margin-top:16px}.floor-inspector-actions .floor-action{flex:1;padding:0 8px}.floor-hint,.floor-empty{font-size:10px;line-height:1.6;color:#858e84;margin:13px 0 0}.floor-empty{padding:12px 2px}
-        @media(max-width:900px){.floor-plan.is-editable{grid-template-columns:1fr}.floor-inspector{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}.floor-inspector h3,.inspector-eyebrow,.floor-inspector-actions,.floor-hint,.floor-empty{grid-column:1/-1}.floor-inspector h3{margin-bottom:7px}}
-        @media(max-width:560px){.floor-plan-main{padding:8px}.floor-plan-toolbar{align-items:flex-start;flex-direction:column}.floor-plan-toolbar span{line-height:1.5}.floor-svg-wrap svg{min-width:700px}.floor-legend{gap:9px;font-size:9px}.floor-availability{margin-left:0}.floor-swipe-hint{display:flex}.floor-inspector{grid-template-columns:1fr 1fr}.floor-field{font-size:9px}}
+        .floor-plan {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 260px;
+          gap: 16px;
+          margin: 0 0 18px;
+          align-items: start;
+        }
+        .floor-plan:not(.is-editable) {
+          display: block;
+        }
+        .floor-plan-main {
+          min-width: 0;
+          border: 1px solid rgba(215, 180, 106, 0.2);
+          background: #171b18;
+          border-radius: 14px;
+          padding: 14px;
+        }
+        .floor-item {
+          outline: none;
+          cursor: pointer;
+          transition: opacity 0.12s ease-out;
+        }
+        .floor-item:hover {
+          opacity: 0.92;
+        }
+        .floor-item:focus-visible {
+          filter: drop-shadow(0 0 6px rgba(215, 180, 106, 0.7));
+        }
+        .floor-legend {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          flex-wrap: wrap;
+          padding: 13px 2px 2px;
+          color: #a0a79d;
+          font-size: 11px;
+        }
+        .floor-legend span {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .floor-legend i {
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+        }
+        .floor-availability {
+          margin-left: auto;
+          color: #d7b46a;
+          font-weight: 600;
+        }
+        .floor-swipe-hint {
+          display: flex;
+          color: #8b9488;
+        }
+        @media (max-width: 900px) {
+          .floor-plan.is-editable {
+            grid-template-columns: 1fr;
+          }
+        }
+        @media (max-width: 560px) {
+          .floor-plan-main {
+            padding: 8px;
+          }
+        }
       `}</style>
     </section>
   )

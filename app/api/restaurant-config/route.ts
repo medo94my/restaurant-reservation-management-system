@@ -1,145 +1,47 @@
-import { eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
-import { db, restaurantWorkspaceConfig } from '@/lib/db'
-import { getManagerSession } from '@/lib/manager-session'
+import { getStaffSession } from '@/lib/auth/auth'
+import { ConfigValidationError, workspaceConfigStore } from '@/lib/workspace-config-store'
 import { RESTAURANT_MANAGER_USER_ID } from '@/lib/restaurant-config'
-import { DEFAULT_FLOOR_ITEMS } from '@/lib/restaurant-config'
-import type { CouchShape, RestaurantConfig, TableShape, TableStatus, Unit } from '@/lib/restaurant-config'
 
 export const runtime = 'nodejs'
 
-const tableShapes: TableShape[] = ['round', 'square', 'rectangle', 'oval', 'long']
-const couchShapes: CouchShape[] = ['loveseat', 'sofa']
-const tableStatuses: TableStatus[] = ['available', 'seated', 'prep', 'blocked']
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
-const isShortString = (value: unknown, max = 160): value is string => typeof value === 'string' && value.trim().length > 0 && value.length <= max
-
-function isRestaurantConfig(value: unknown): value is RestaurantConfig {
-  if (!isRecord(value)) return false
-  const { visitTiers, occasionTags, customers, floorItems } = value
-  if (!Array.isArray(visitTiers) || visitTiers.length < 1 || visitTiers.length > 12) return false
-  if (!Array.isArray(occasionTags) || occasionTags.length > 40) return false
-  if (!Array.isArray(customers) || customers.length > 5000) return false
-  if (!Array.isArray(floorItems) || floorItems.length > 250) return false
-
-  const validTiers = visitTiers.every((tier) => isRecord(tier)
-    && isShortString(tier.id, 64)
-    && isShortString(tier.label, 40)
-    && Number.isInteger(tier.minVisits)
-    && Number(tier.minVisits) >= 0
-    && typeof tier.color === 'string'
-    && /^#[\da-fA-F]{6}$/.test(tier.color))
-  const validTags = occasionTags.every((tag) => isRecord(tag)
-    && isShortString(tag.id, 64)
-    && isShortString(tag.label, 40)
-    && typeof tag.color === 'string'
-    && /^#[\da-fA-F]{6}$/.test(tag.color))
-  const validCustomers = customers.every((customer) => isRecord(customer)
-    && isShortString(customer.phone, 24)
-    && isShortString(customer.name, 100)
-    && Number.isInteger(customer.visits)
-    && Number(customer.visits) >= 0
-    && typeof customer.note === 'string'
-    && customer.note.length <= 500
-    && Array.isArray(customer.occasionTags)
-    && customer.occasionTags.length <= 40
-    && customer.occasionTags.every((tagId) => typeof tagId === 'string' && tagId.length <= 64))
-  const validFloorItems = floorItems.every((item) => {
-    if (!isRecord(item)
-      || !isShortString(item.id, 80)
-      || !Number.isInteger(item.capacity)
-      || Number(item.capacity) < 1
-      || Number(item.capacity) > 30
-      || typeof item.status !== 'string'
-      || !tableStatuses.includes(item.status as TableStatus)
-      || !Number.isFinite(item.x)
-      || Number(item.x) < 55
-      || Number(item.x) > 945
-      || !Number.isFinite(item.y)
-      || Number(item.y) < 55
-      || Number(item.y) > 545
-      || !Number.isInteger(item.rotation)
-      || (item.guest !== undefined && (typeof item.guest !== 'string' || item.guest.length > 100))
-      || (item.note !== undefined && (typeof item.note !== 'string' || item.note.length > 500))
-      || (item.archived !== undefined && typeof item.archived !== 'boolean')) return false
-
-    if (item.kind === 'Table') return typeof item.tableType === 'string' && tableShapes.includes(item.tableType as TableShape)
-    if (item.kind === 'Couch') return typeof item.couchType === 'string' && couchShapes.includes(item.couchType as CouchShape)
-    if (item.kind === 'Room') return typeof item.tableType === 'string'
-      && tableShapes.includes(item.tableType as TableShape)
-      && Number.isInteger(item.roomWidth)
-      && Number(item.roomWidth) >= 150
-      && Number(item.roomWidth) <= 320
-      && Number.isInteger(item.roomHeight)
-      && Number(item.roomHeight) >= 120
-      && Number(item.roomHeight) <= 240
-    return false
-  })
-
-  const itemIds = new Set(floorItems.filter(isRecord).map((item) => typeof item.id === 'string' ? item.id.trim().toLowerCase() : ''))
-  return validTiers && validTags && validCustomers && validFloorItems && itemIds.size === floorItems.length && !itemIds.has('')
-}
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const [row] = await db
-      .select({ config: restaurantWorkspaceConfig.config })
-      .from(restaurantWorkspaceConfig)
-      .where(eq(restaurantWorkspaceConfig.userId, RESTAURANT_MANAGER_USER_ID))
-      .limit(1)
-
-    const session = await getManagerSession()
-    const storedConfig = row?.config as (RestaurantConfig & { tables?: Unit[] }) | undefined
-    const legacyItems = storedConfig?.tables ?? []
-    const hasLegacyItems = Array.isArray(storedConfig?.tables)
-    const legacyStarterLayout = legacyItems.length === 16 && legacyItems.every((item, index) => {
-      const status = index === 4 ? 'prep' : [0, 8].includes(index) ? 'seated' : 'available'
-      return item.kind === 'Table'
-        && item.id === `Table ${index + 1}`
-        && item.tableType === tableShapes[index % tableShapes.length]
-        && item.capacity === [2, 4, 4, 6, 8][index % 5]
-        && item.x === 125 + (index % 4) * 250
-        && item.y === 95 + Math.floor(index / 4) * 135
-        && item.rotation === 0
-        && item.status === status
-        && !item.archived
-    })
-    const config = storedConfig ? {
-      ...storedConfig,
-      floorItems: storedConfig.floorItems ?? (hasLegacyItems ? (legacyStarterLayout ? DEFAULT_FLOOR_ITEMS : legacyItems) : DEFAULT_FLOOR_ITEMS),
-    } : null
-    const visibleConfig = !config ? null : session ? config : {
-      floorItems: config.floorItems,
-      visitTiers: config.visitTiers,
-      occasionTags: config.occasionTags,
+    const staffSession = await getStaffSession(request?.headers).catch(() => null)
+    if (!staffSession?.user || staffSession.user.isActive === false) {
+      return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
     }
-
-    return NextResponse.json({ config: visibleConfig }, { headers: { 'Cache-Control': 'no-store' } })
-  } catch {
+    const isManager =
+      staffSession.user.role === 'manager' || staffSession.user.role === 'admin'
+    const role = isManager ? 'manager' : 'host'
+    const config = await workspaceConfigStore.loadConfig(role)
+    return NextResponse.json({ config }, { headers: { 'Cache-Control': 'no-store' } })
+  } catch (err) {
+    console.error('GET /api/restaurant-config error:', err)
     return NextResponse.json({ error: 'Unable to load restaurant settings.' }, { status: 500 })
   }
 }
 
 export async function PUT(request: Request) {
-  const session = await getManagerSession()
-  if (!session) return NextResponse.json({ error: 'Manager access required.' }, { status: 401 })
-
-  const config = await request.json().catch(() => null)
-  if (!isRestaurantConfig(config) || JSON.stringify(config).length > 500_000) {
-    return NextResponse.json({ error: 'Invalid restaurant settings.' }, { status: 400 })
-  }
-
   try {
-    await db
-      .insert(restaurantWorkspaceConfig)
-      .values({ userId: session.userId, config })
-      .onConflictDoUpdate({
-        target: restaurantWorkspaceConfig.userId,
-        set: { config, updatedAt: new Date() },
-      })
+    const staffSession = await getStaffSession(request?.headers).catch(() => null)
+    const isAuthorized = Boolean(
+      staffSession?.user &&
+      staffSession.user.isActive !== false &&
+      (staffSession.user.role === 'manager' || staffSession.user.role === 'admin')
+    )
+    if (!isAuthorized) {
+      return NextResponse.json({ error: 'Manager access required.' }, { status: 401 })
+    }
 
+    const body = await request.json().catch(() => null)
+    await workspaceConfigStore.saveConfig(body, RESTAURANT_MANAGER_USER_ID)
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (error) {
+    console.error('PUT /api/restaurant-config error:', error)
+    if (error instanceof ConfigValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
     return NextResponse.json({ error: 'Unable to save restaurant settings.' }, { status: 500 })
   }
 }

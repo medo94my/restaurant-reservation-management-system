@@ -1,0 +1,476 @@
+/* =========================================================================
+   Saffron & Cedar Dining Room Management System Stylesheet
+   Material UI (MUI v6) baseline & legacy-pruned stylesheet
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap');
+
+/* -------------------------------------------------------------------------
+   Global Layout & App Shell
+   ------------------------------------------------------------------------- */
+.app-shell {
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 55% -30%, #293129 0, transparent 58%), #111312;
+  padding: 0 30px 36px;
+  color: #eee9df;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* -------------------------------------------------------------------------
+   UI Helper Utilities
+   ------------------------------------------------------------------------- */
+.app-icon {
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gold {
+  color: #d7b46a !important;
+}
+
+.live-dot {
+  height: 7px;
+  width: 7px;
+  border-radius: 50%;
+  background: #72bd8d;
+  box-shadow: 0 0 12px #72bd8d88;
+}
+
+.eyebrow {
+  color: #dfbf7c;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* -------------------------------------------------------------------------
+   Floor Plan SVG Layout & Interactivity
+   ------------------------------------------------------------------------- */
+.floor-plan {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 14px;
+  margin: 0 0 18px;
+  align-items: start;
+}
+
+.floor-plan:not(.is-editable) {
+  display: block;
+}
+
+.floor-plan-main {
+  min-width: 0;
+  border: 1px solid rgba(215, 180, 106, 0.2);
+  background: #141715;
+  border-radius: 6px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.floor-svg-wrap {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  overscroll-behavior: auto;
+}
+
+.is-editable .floor-svg-wrap {
+  overscroll-behavior: contain;
+}
+
+.floor-svg-wrap > svg.floor-canvas-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+}
+
+.is-editable .floor-svg-wrap > svg.floor-canvas-svg {
+  touch-action: none;
+  cursor: grab;
+}
+
+.is-editable .floor-svg-wrap > svg.floor-canvas-svg:active {
+  cursor: grabbing;
+}
+
+.floor-item {
+  outline: none;
+  cursor: pointer;
+  touch-action: auto;
+  transition: filter .15s;
+}
+
+.is-editable .floor-item {
+  touch-action: none;
+}
+
+.floor-item:hover {
+  filter: brightness(1.1);
+}
+
+.floor-item:focus-visible {
+  filter: brightness(1.18);
+}
+
+.floor-item.selected {
+  cursor: grab;
+}
+
+.floor-item.selected:active {
+  cursor: grabbing;
+}
+
+.floor-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 13px 2px 1px;
+  color: #a0a79d;
+  font-size: 10px;
+}
+
+.floor-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.floor-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.floor-availability {
+  margin-left: auto;
+  color: #d1bb7d;
+}
+
+.floor-swipe-hint {
+  display: none;
+  color: #8b9488;
+}
+
+/* -------------------------------------------------------------------------
+   Staff Login Screen
+   ------------------------------------------------------------------------- */
+.login-stage {
+  min-height: calc(100vh - 36px);
+  display: flex;
+  flex-direction: column;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.login-top {
+  height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #303630;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.brand-mark {
+  width: 39px;
+  height: 39px;
+  border: 1px solid #957d49;
+  border-radius: 6px;
+  color: #d7b46a;
+  display: grid;
+  place-items: center;
+  background: #d7b46a12;
+}
+
+.brand-name {
+  font: 600 20px 'Playfair Display', serif;
+  letter-spacing: .02em;
+}
+
+.brand-sub {
+  color: #a4aaa0;
+  font-size: 10px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+.login-live {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #9da59b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .13em;
+}
+
+.login-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 470px);
+  align-items: center;
+  gap: 8vw;
+  padding: 56px 8vw;
+}
+
+.login-story {
+  /* Layout container */
+}
+
+.login-heading {
+  font: 500 clamp(42px, 6vw, 72px) / 1.08 'Playfair Display', serif;
+  letter-spacing: -.04em;
+  margin: 20px 0;
+  color: #eee9df;
+}
+
+.login-heading em {
+  font-weight: 500;
+  color: #d7b46a;
+}
+
+.login-copy {
+  color: #a3aaa1;
+  font-size: 16px;
+  line-height: 1.7;
+  max-width: 430px;
+}
+
+.login-note {
+  margin-top: 32px;
+  color: #c9b882;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.role-panel {
+  border: 1px solid #3b423b;
+  background: linear-gradient(150deg, #202521, #181c19);
+  border-radius: 6px;
+  padding: 27px;
+  box-shadow: 0 25px 70px #0003;
+}
+
+.role-panel-heading h2 {
+  font: 500 24px 'Playfair Display', serif;
+  margin: 9px 0 5px;
+}
+
+.role-panel-heading p {
+  font-size: 12px;
+  color: #9da49a;
+  margin: 0 0 21px;
+}
+
+.login-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border-top: 1px solid #303630;
+  padding: 18px 2px;
+  color: #858d83;
+  font-size: 9px;
+  letter-spacing: .08em;
+}
+
+.login-footer span:first-child {
+  color: #c5a661;
+  font-weight: 700;
+}
+
+/* -------------------------------------------------------------------------
+   Media Queries & Responsive Behavior
+   ------------------------------------------------------------------------- */
+@media (min-width: 801px) and (max-width: 1100px) {
+  .login-content {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
+    gap: 42px;
+    padding: 44px 32px;
+  }
+  .login-heading {
+    font-size: clamp(44px, 5vw, 56px);
+  }
+}
+
+@media (max-width: 980px) {
+  .app-shell {
+    padding: 0 20px 28px;
+  }
+}
+
+@media (max-width: 900px) {
+  .floor-plan.is-editable {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 800px) {
+  .login-content {
+    grid-template-columns: 1fr;
+    gap: 29px;
+    padding: 42px 8vw;
+  }
+  .login-heading {
+    font-size: 48px;
+  }
+  .role-panel {
+    max-width: 560px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .login-story {
+    text-align: center;
+  }
+  .login-copy {
+    margin-inline: auto;
+  }
+  .login-note {
+    justify-content: center;
+  }
+  .login-footer {
+    font-size: 8px;
+    flex-wrap: wrap;
+  }
+  .login-live {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 650px) {
+  .app-shell {
+    padding: 0 13px 24px;
+  }
+  .brand-name {
+    font-size: 17px;
+  }
+  .brand-sub {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 560px) {
+  .floor-plan-main {
+    padding: 8px;
+  }
+  .floor-svg-wrap > svg.floor-canvas-svg {
+    min-width: 700px;
+  }
+  .floor-legend {
+    gap: 9px;
+    font-size: 9px;
+  }
+  .floor-availability {
+    margin-left: 0;
+  }
+  .floor-swipe-hint {
+    display: flex;
+  }
+}
+
+@media (max-width: 500px) {
+  .login-top {
+    height: 70px;
+  }
+  .login-live {
+    display: none;
+  }
+  .login-content {
+    padding: 36px 4px;
+    gap: 25px;
+  }
+  .login-heading {
+    font-size: 42px;
+  }
+  .role-panel {
+    padding: 19px;
+  }
+  .login-footer span:last-child {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    /* Retain subtle opacity & color transitions so state change and focus feedback remain perceptible */
+    transition-duration: 0.1s !important;
+    scroll-behavior: auto !important;
+    transform: none !important;
+  }
+}
+
+@media print {
+  @page {
+    margin: 1.2cm;
+    size: landscape;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-size: 11pt !important;
+  }
+
+  /* Hide app bar, navigation, buttons, live alerts, and drawers */
+  header,
+  nav,
+  button,
+  .MuiButton-root,
+  .MuiIconButton-root,
+  .MuiAppBar-root,
+  .MuiDrawer-root,
+  .MuiTabs-root,
+  .live-alerts {
+    display: none !important;
+  }
+
+  /* Ensure the main content and tables print clearly */
+  .app-shell,
+  main,
+  .MuiTableContainer-root,
+  .MuiPaper-root {
+    display: block !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #111111 !important;
+    border-color: #cccccc !important;
+  }
+
+  .MuiTable-root {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .MuiTableCell-root {
+    color: #111111 !important;
+    border-bottom: 1px solid #dddddd !important;
+    padding: 6px 8px !important;
+    font-size: 9.5pt !important;
+  }
+
+  .MuiTableCell-head {
+    font-weight: 700 !important;
+    border-bottom: 2px solid #333333 !important;
+    color: #000000 !important;
+  }
+
+  .MuiChip-root {
+    border: 1px solid #777777 !important;
+    background: #f5f5f5 !important;
+    color: #111111 !important;
+  }
+}

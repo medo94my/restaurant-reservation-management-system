@@ -1,6 +1,10 @@
 export type TableShape = 'round' | 'square' | 'rectangle' | 'oval' | 'long'
-export type CouchShape = 'loveseat' | 'sofa'
+export type CouchShape = 'loveseat' | 'sofa' | 'l-sectional' | 'banquette'
 export type TableStatus = 'available' | 'seated' | 'prep' | 'blocked'
+
+export const TABLE_SHAPES: readonly TableShape[] = ['round', 'square', 'rectangle', 'oval', 'long']
+export const COUCH_SHAPES: readonly CouchShape[] = ['loveseat', 'sofa', 'l-sectional', 'banquette']
+export const TABLE_STATUSES: readonly TableStatus[] = ['available', 'seated', 'prep', 'blocked']
 
 type FloorItemBase = {
   id: string
@@ -38,6 +42,8 @@ export type Booking = {
   note: string
   unit: string
   arrived?: boolean
+  occasionTags?: string[]
+  customOccasion?: string
 }
 
 export type CustomerProfile = {
@@ -81,6 +87,7 @@ export const DEFAULT_OCCASION_TAGS: OccasionTag[] = [
   { id: 'anniversary', label: 'Anniversary', color: '#d7b46a' },
   { id: 'vip', label: 'VIP', color: '#b4a0e0' },
   { id: 'vvip', label: 'VVIP', color: '#e4c47d' },
+  { id: 'other', label: 'Others', color: '#c9a875' },
 ]
 
 export const DEFAULT_CUSTOMERS: CustomerProfile[] = [
@@ -91,7 +98,6 @@ export const DEFAULT_CUSTOMERS: CustomerProfile[] = [
   { phone: '96131234567', name: 'Leila Farah', visits: 4, note: 'Vegetarian mezze', occasionTags: [] },
 ]
 
-const tableShapes: TableShape[] = ['round', 'square', 'rectangle', 'oval', 'long']
 const tableCapacities = [2, 4, 4, 6, 8]
 
 const defaultTables: TableUnit[] = Array.from({ length: 12 }, (_, index) => {
@@ -103,7 +109,7 @@ const defaultTables: TableUnit[] = Array.from({ length: 12 }, (_, index) => {
   return {
     id: `Table ${index + 1}`,
     kind: 'Table',
-    tableType: tableShapes[index % tableShapes.length],
+    tableType: TABLE_SHAPES[index % TABLE_SHAPES.length],
     capacity: tableCapacities[index % tableCapacities.length],
     status,
     x: 135 + column * 220,

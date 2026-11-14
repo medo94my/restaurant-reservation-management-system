@@ -1,7 +1,10 @@
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { pgTable, jsonb, text, timestamp } from 'drizzle-orm/pg-core'
 import { Pool } from 'pg'
-import type { RestaurantConfig } from '@/lib/restaurant-config'
+import type { RestaurantConfig } from './restaurant-config.ts'
+import * as schema from './schema.ts'
+
+export * from './schema.ts'
 
 export const restaurantWorkspaceConfig = pgTable('restaurant_workspace_config', {
   userId: text('user_id').primaryKey(),
@@ -21,4 +24,5 @@ const pool = globalForPool.restaurantPool ?? new Pool({
 
 if (process.env.NODE_ENV !== 'production') globalForPool.restaurantPool = pool
 
-export const db = drizzle(pool)
+export const db = drizzle(pool, { schema: { ...schema, restaurantWorkspaceConfig } })
+
