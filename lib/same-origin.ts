@@ -1,3 +1,5 @@
+import { v0OriginValues } from '@/lib/deployment-origins'
+
 function firstHeader(value: string | null) {
   const first = value?.split(',')[0]?.trim()
   return first || undefined
@@ -19,10 +21,7 @@ function trustedHosts() {
       process.env.BETTER_AUTH_URL,
       process.env.VERCEL_PROJECT_PRODUCTION_URL,
       process.env.VERCEL_URL,
-      process.env.V0_RUNTIME_URL,
-      process.env.V0_DEV_APP_URL,
-      process.env.V0_BUILD_URL,
-      process.env.V0_SANDBOX_URL,
+      ...v0OriginValues(),
       'http://localhost:3000',
     ]
       .map(hostFrom)

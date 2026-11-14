@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth'
 import { admin, username } from 'better-auth/plugins'
 import { pool } from '@/lib/db'
 import { requestHostOrigin } from '@/lib/request-host-origin'
+import { inV0IframePreview, v0OriginValues } from '@/lib/deployment-origins'
 
 function getOrigin(value?: string) {
   if (!value) return undefined
@@ -24,15 +25,12 @@ export const baseURL =
   getOrigin(process.env.BETTER_AUTH_URL) ??
   getOrigin(process.env.VERCEL_PROJECT_PRODUCTION_URL) ??
   getOrigin(process.env.VERCEL_URL) ??
-  getOrigin(process.env.V0_RUNTIME_URL) ??
+  getOrigin(v0OriginValues().find(Boolean)) ??
   'http://localhost:3000'
 
 const developmentOrigins = [
   'http://localhost:3000',
-  process.env.V0_RUNTIME_URL,
-  process.env.V0_DEV_APP_URL,
-  process.env.V0_BUILD_URL,
-  process.env.V0_SANDBOX_URL,
+  ...v0OriginValues(),
 ]
   .map(getOrigin)
   .filter((origin): origin is string => Boolean(origin))
@@ -50,12 +48,7 @@ const productionOrigins = [
 // combination over plain http — the session cookie is silently dropped after
 // sign-in and the user loops back to the login screen forever. Defaults
 // (SameSite=Lax, secure derived from the baseURL scheme) are correct there.
-const inV0IframePreview = Boolean(
-  process.env.V0_RUNTIME_URL
-  || process.env.V0_DEV_APP_URL
-  || process.env.V0_BUILD_URL
-  || process.env.V0_SANDBOX_URL,
-)
+const v0Preview = inV0IframePreview()
 
 // Better Auth already trusts the `baseURL` origin on its own. The entries
 // below add: the env-derived deployment origins, plus (per request) the
@@ -101,7 +94,7 @@ export const auth = betterAuth({
       '/sign-up/email': { window: 60, max: 3 },
     },
   },
-  ...(inV0IframePreview
+  ...(v0Preview
     ? {
         advanced: {
           defaultCookieAttributes: {
