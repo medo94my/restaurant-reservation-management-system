@@ -140,14 +140,3 @@ export function StaffAccountActions({ profile, compact = false }: { profile: Sta
     </div>
   )
 }
-
-export function StaffAccountBar({ profile }: { profile: StaffProfileSummary }) {
-  return (
-    <div className="staff-account-bar">
-      <StaffAccountActions profile={profile} />
-      <style jsx global>{`
-        .staff-account-bar{min-height:48px;display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:8px clamp(16px,3vw,36px);border-bottom:1px solid rgba(127,138,127,.18);background:#151b17;color:#bdc5bb;font:0.6875rem var(--font-dm-sans),sans-serif}
-      `}</style>
-    </div>
-  )
-}
