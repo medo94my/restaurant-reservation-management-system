@@ -78,6 +78,7 @@ export default function HomePage({ managerAccess = false, branding = null, manag
   const [configSaveStatus, setConfigSaveStatus] = useState<'idle' | 'saved' | 'saving' | 'error'>('idle')
   const [pinBusy, setPinBusy] = useState(false)
   const [bookingTags, setBookingTags] = useState<string[]>([])
+  const [floorView, setFloorView] = useState<'canvas' | 'grid'>('canvas')
   const appliedConfig = useRef(false)
   const configRevision = useRef(0)
   const saveQueue = useRef<Promise<unknown>>(Promise.resolve())
@@ -88,6 +89,8 @@ export default function HomePage({ managerAccess = false, branding = null, manag
   const { trigger: sendServiceMutation } = useSWRMutation('/api/service-data', mutateServiceData)
 
   useEffect(() => { const updateClock = () => setNow(new Date()); updateClock(); const timer = window.setInterval(updateClock, 30_000); return () => window.clearInterval(timer) }, [])
+  useEffect(() => { const saved = window.localStorage.getItem('murex.floor-view'); if (saved === 'canvas' || saved === 'grid') setFloorView(saved) }, [])
+  useEffect(() => { window.localStorage.setItem('murex.floor-view', floorView) }, [floorView])
   useEffect(() => {
     if (!serviceData) return
     setBookings(serviceData.reservations)
@@ -406,6 +409,13 @@ export default function HomePage({ managerAccess = false, branding = null, manag
         .wizard-summary-unit{margin-left:auto;color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 60%,white);font-weight:700}
         .wizard-cap-hint{color:#8b948a;font-weight:400}
         .wizard-error{margin:0;color:var(--terracotta-salmon);font-size:0.6875rem}
+        /* Canvas / grid display toggle */
+        .floor-view-toggle{display:inline-flex;gap:4px;padding:4px;border:1px solid #3b453b;border-radius:10px;background:#1d221e;width:fit-content;margin:0 0 10px}
+        .floor-view-option{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border:1px solid transparent;border-radius:7px;background:none;color:#9daa9a;font:600 0.6875rem inherit;cursor:pointer;white-space:nowrap}
+        .floor-view-option .material-symbols-outlined{font-size:15px}
+        .floor-view-option.on{border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 45%,transparent);color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 55%,white);background:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 8%,transparent)}
+        .floor-view-option:focus-visible{outline:2px solid color-mix(in srgb,var(--restaurant-primary,#d7b46a) 76%,white);outline-offset:2px}
+        .console-main.grid-only{grid-template-columns:1fr}
         @media(max-width:1100px){.console-main{grid-template-columns:1fr}}
     `}</style>
     {serviceError&&<div className="alert" role="alert"><div className="alert-main">{icon('error_outline')}<span>{serviceError}</span></div><button className="button small" onClick={()=>setServiceError('')}>Dismiss</button></div>}
@@ -424,12 +434,16 @@ export default function HomePage({ managerAccess = false, branding = null, manag
       </section>
       {serviceError&&<p className="console-error" role="alert">{serviceError}</p>}
       {consoleNotice&&<p className="console-notice" role="status">{consoleNotice}</p>}
-      <div className="console-main">
-        <section className="console-floor-panel" aria-label="Floor plan">
+      <div className="floor-view-toggle" role="group" aria-label="Table display">
+        <button type="button" className={`floor-view-option ${floorView==='canvas'?'on':''}`} aria-pressed={floorView==='canvas'} onClick={()=>setFloorView('canvas')}>{icon('floor_plan',15)}Canvas</button>
+        <button type="button" className={`floor-view-option ${floorView==='grid'?'on':''}`} aria-pressed={floorView==='grid'} onClick={()=>setFloorView('grid')}>{icon('grid_view',15)}Grid</button>
+      </div>
+      <div className={`console-main ${floorView==='grid'?'grid-only':''}`}>
+        {floorView==='canvas'&&<section className="console-floor-panel" aria-label="Floor plan">
           <EditableFloorPlan items={shownUnits} onActivate={(item) => { setSelected(item); if (item.status === 'seated') setModal('complete'); else if (item.status === 'prep') { const reservation = bookings.find((booking) => booking.unit === item.id); if (reservation) void seatReservation(reservation.id) } else if (item.status === 'available') openBookingWizard({ unitId: item.id }) }} />
-        </section>
+        </section>}
         <div className="console-side" ref={tablesRef}>
-      {sections.map((section,si)=>{const area=shownUnits.filter(u=>u.kind===section);return <section className="section" key={section}><div className="section-head"><div className="section-title"><span className="section-icon">{icon('table_restaurant',21)}</span>Dining tables<span className="section-meta">{area.length} units</span></div><div className="section-right">{manager&&<button className="button small" onClick={()=>addUnit(section as Unit['kind'])}>{icon('add',16)}Add unit</button>}{si===2&&<button className="button small" onClick={()=>{setMergeSet([]);setModal('merge')}}>{icon('table_rows',16)}Combine tables</button>}<span className="unit-count">{area.filter(u=>u.status==='available').length} available</span></div></div>
+      {floorView==='grid'&&sections.map((section,si)=>{const area=shownUnits.filter(u=>u.kind===section);return <section className="section" key={section}><div className="section-head"><div className="section-title"><span className="section-icon">{icon('table_restaurant',21)}</span>Dining tables<span className="section-meta">{area.length} units</span></div><div className="section-right">{manager&&<button className="button small" onClick={()=>addUnit(section as Unit['kind'])}>{icon('add',16)}Add unit</button>}{si===2&&<button className="button small" onClick={()=>{setMergeSet([]);setModal('merge')}}>{icon('table_rows',16)}Combine tables</button>}<span className="unit-count">{area.filter(u=>u.status==='available').length} available</span></div></div>
         {manager?<div className="section-grid-edit">{area.map(unit=><div className="edit-unit-row" key={unit.id}><input className="edit-field" aria-label="Unit name" value={unit.id} onChange={e=>updateFloorPlan(units.map(u=>u.id===unit.id?{...u,id:e.target.value}:u))}/><label style={{display:'flex',alignItems:'center',gap:5}}><input className="edit-field" aria-label="Capacity" type="number" min="1" max="30" value={unit.capacity} onChange={e=>updateUnit(unit.id,{capacity:Number(e.target.value)})}/><span style={{fontSize:10,color:'#a0a69d'}}>pax</span></label><select className="edit-field" aria-label="Unit status" value={unit.status==='blocked'?'blocked':'active'} onChange={e=>updateUnit(unit.id,{status:e.target.value==='blocked'?'blocked':'available',guest:e.target.value==='blocked'?unit.guest:undefined})}><option value="active">In service</option><option value="blocked">Blocked / OOS</option></select><button className="tiny-action" aria-label="Archive unit" onClick={()=>updateUnit(unit.id,{archived:true})}>{icon('archive',16)}</button></div>)}</div>:<div className="unit-grid">{area.map(unit=>{const activateUnit=()=>{setSelected(unit);if(unit.status==='seated'){setModal('complete')}else if(unit.status==='prep'){const reservation=bookings.find(booking=>booking.unit===unit.id);if(reservation)void seatReservation(reservation.id)}else if(unit.status==='available')openBookingWizard({unitId:unit.id})};return <div key={unit.id} className={`unit-card ${unit.status}`} style={{textAlign:'left',color:'inherit'}}><button type="button" className="unit-card-main" onClick={activateUnit}><div className="card-top"><span className="unit-id">{unit.id}{combined&&unit.id==='Table 3'?' + 4':''}</span><span className="capacity">{unit.capacity} seats</span></div><div className={`status ${unit.status}`}><span className="status-dot"/>{unit.status==='blocked'?'Out of service':unit.status==='seated'?'Seated':unit.status==='prep'?'Prep needed':'Available'}</div>{unit.guest&&<><div className="guest-line"><span>{unit.guest}</span><span>{unit.pax} pax</span></div><div className="guest-detail">{bookings.find(b=>b.unit===unit.id)?.time ? fmt(bookings.find(b=>b.unit===unit.id)!.time) : unit.time}{unit.note?` · ${unit.note}`:''}</div></>}{unit.status==='prep'&&<span className="prep-badge">Prep Table · Due in {bookings.find(b=>b.unit===unit.id)?minutesUntil(bookings.find(b=>b.unit===unit.id)!.time):20} min</span>}</button><div className="card-tools" onClick={e=>e.stopPropagation()}>{unit.status==='available'&&<button className="tiny-action" aria-label={`Block ${unit.id}`} title="Block table" onClick={()=>void updateUnit(unit.id,{status:'blocked'})}>{icon('block',15)}</button>}{unit.status==='blocked'&&<button className="tiny-action" aria-label={`Return ${unit.id} to service`} title="Return to service" onClick={()=>void updateUnit(unit.id,{status:'available'})}>{icon('check_circle',15)}</button>}{unit.status==='seated'&&<button className="tiny-action" aria-label={`Close out ${unit.id}`} title="Close out seating" onClick={()=>{setSelected(unit);setModal('complete')}}>{icon('receipt',15)}</button>}{unit.status==='prep'&&<button className="tiny-action" aria-label={`Seat ${unit.id}`} title="Seat the reservation" onClick={()=>{const reservation=bookings.find(b=>b.unit===unit.id);if(reservation)void seatReservation(reservation.id)}}>{icon('event_seat',15)}</button>}</div></div>})}</div>}
       </section>})}
 
