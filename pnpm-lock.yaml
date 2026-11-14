@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@material/web':
-        specifier: ^2.4.1
-        version: 2.4.1
       '@vercel/blob':
         specifier: ^2.9.0
         version: 2.9.0
@@ -32,6 +29,9 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.7(react@19.2.7)
+      styled-jsx:
+        specifier: 5.1.6
+        version: 5.1.6(react@19.2.7)
       swr:
         specifier: ^2.5.1
         version: 2.5.1(react@19.2.7)
@@ -295,15 +295,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@lit-labs/ssr-dom-shim@1.6.0':
-    resolution: {integrity: sha512-VHb0ALPMTlgKjM6yIxxoQNnpKyUKLD04VzeQdsiXkMqkvYlAHxq9glGLmgbb889/1GsohSOAjvQYoiBppXFqrQ==}
-
-  '@lit/reactive-element@2.1.2':
-    resolution: {integrity: sha512-pbCDiVMnne1lYUIaYNN5wrwQXDtHaYtg7YEFPeW+hws6U47WeFvISGUWekPGKWOP1ygrs0ef0o1VJMk1exos5A==}
-
-  '@material/web@2.4.1':
-    resolution: {integrity: sha512-0sk9t25acJ72Qv3r0n9r0lgDbPaAKnpm0p+QmEAAwYyZomHxuVbgrrAdtNXaRm7jFyGh+WsTr8bhtvCnpPRFjw==}
-
   '@next/env@16.4.3':
     resolution: {integrity: sha512-a7tz1QCcWWkwC/rPJcPMJk/UNRu9CFhDd3OHYE5hddbJrs8BqRTalxI6GlKCWEGzRLHN+S/B7a4PAHCtm25aBQ==}
 
@@ -386,9 +377,6 @@ packages:
 
   '@types/react@19.2.17':
     resolution: {integrity: sha512-MXfmqaVPEVgkBT/aY0aGCkRWWtByiYQXo3xdQ8r5RzuFrPiRn8Gar2tQdXSUQ2GKV3bkXckek89V8wQBY2Q/Aw==}
-
-  '@types/trusted-types@2.0.7':
-    resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
 
   '@vercel/blob@2.9.0':
     resolution: {integrity: sha512-o+1CMRlT8/RvGo1aGkFv40F7v3MLdSOaVaIccepBXWrXgonKId3hHKSKGQ+iBDPoSe03crmHfhpHtTs0CCXiig==}
@@ -634,15 +622,6 @@ packages:
   kysely@0.29.9:
     resolution: {integrity: sha512-K48ErswC3MlIcBqR0pYIIEl+n9rIgwxgzaM1FxKHMXn7egxr1NHj7bCeF98mXl9A3/QoL5I7mo5S/mLXgeDgGA==}
     engines: {node: '>=22.0.0'}
-
-  lit-element@4.2.2:
-    resolution: {integrity: sha512-aFKhNToWxoyhkNDmWZwEva2SlQia+jfG0fjIWV//YeTaWrVnOxD89dPKfigCUspXFmjzOEUQpOkejH5Ly6sG0w==}
-
-  lit-html@3.3.3:
-    resolution: {integrity: sha512-el8M6jK2o3RXBnrSHX3ZKrsN8zEV63pSExTO1wYJz7QndGYZ8353e2a5PPX+qHe2aGayfnchQmkAojaWAREOIA==}
-
-  lit@3.3.3:
-    resolution: {integrity: sha512-fycuvZg/hkpozL00lm1pEJH5nN/lr9ZXd6mJI2HSN4+Bzc+LDNdEApJ6HFbPkdFNHLvOplIIuJvxkS4XUxqirw==}
 
   merge-stream@2.0.0:
     resolution: {integrity: sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==}
@@ -1044,17 +1023,6 @@ snapshots:
   '@img/sharp-win32-x64@0.35.5':
     optional: true
 
-  '@lit-labs/ssr-dom-shim@1.6.0': {}
-
-  '@lit/reactive-element@2.1.2':
-    dependencies:
-      '@lit-labs/ssr-dom-shim': 1.6.0
-
-  '@material/web@2.4.1':
-    dependencies:
-      lit: 3.3.3
-      tslib: 2.8.1
-
   '@next/env@16.4.3': {}
 
   '@next/swc-darwin-arm64@16.4.3':
@@ -1108,8 +1076,6 @@ snapshots:
   '@types/react@19.2.17':
     dependencies:
       csstype: 3.2.3
-
-  '@types/trusted-types@2.0.7': {}
 
   '@vercel/blob@2.9.0':
     dependencies:
@@ -1232,22 +1198,6 @@ snapshots:
   jose@6.2.17: {}
 
   kysely@0.29.9: {}
-
-  lit-element@4.2.2:
-    dependencies:
-      '@lit-labs/ssr-dom-shim': 1.6.0
-      '@lit/reactive-element': 2.1.2
-      lit-html: 3.3.3
-
-  lit-html@3.3.3:
-    dependencies:
-      '@types/trusted-types': 2.0.7
-
-  lit@3.3.3:
-    dependencies:
-      '@lit/reactive-element': 2.1.2
-      lit-element: 4.2.2
-      lit-html: 3.3.3
 
   merge-stream@2.0.0: {}
 

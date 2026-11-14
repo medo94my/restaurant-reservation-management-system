@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { DM_Sans, Playfair_Display } from 'next/font/google'
+import StyledJsxRegistry from './registry'
 import './globals.css'
 
 const dmSans = DM_Sans({
@@ -47,7 +48,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        {children}
+        <StyledJsxRegistry>{children}</StyledJsxRegistry>
       </body>
     </html>
   )

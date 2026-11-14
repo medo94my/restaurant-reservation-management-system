@@ -10,6 +10,7 @@ type Props = {
   visitTiers: VisitTier[]
   occasionTags: OccasionTag[]
   onCustomersChange: (customers: CustomerProfile[]) => void
+  saveStatus?: 'idle' | 'saved' | 'saving' | 'error'
 }
 
 function getTier(visits: number, tiers: VisitTier[]) {
@@ -18,7 +19,7 @@ function getTier(visits: number, tiers: VisitTier[]) {
 
 type DrawerMode = { mode: 'create' } | { mode: 'edit'; original: CustomerProfile } | null
 
-export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, occasionTags, onCustomersChange }: Props) {
+export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, occasionTags, onCustomersChange, saveStatus = 'idle' }: Props) {
   const [search, setSearch] = useState('')
   const [tierFilter, setTierFilter] = useState('all')
   const [tagFilter, setTagFilter] = useState('all')
@@ -212,6 +213,11 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
             {occasionTags.map((tag) => <option key={tag.id} value={tag.id}>{tag.label}</option>)}
           </select>
           <span className="guest-count">{filteredCustomers.length} of {customers.length} guests</span>
+          {saveStatus !== 'idle' && (
+            <span className="guest-save-state" data-status={saveStatus} role={saveStatus === 'error' ? 'alert' : 'status'}>
+              {saveStatus === 'saving' ? 'Saving changes…' : saveStatus === 'error' ? 'Save failed · check manager access' : 'Changes saved'}
+            </span>
+          )}
         </div>
 
         {notice && <p className="guest-notice" role="status">{notice}</p>}
@@ -364,6 +370,10 @@ export function GuestTagsManager({ customers, monthlyVisitsByPhone, visitTiers, 
         .guest-filter{min-height:42px;min-width:136px;padding:0 11px;border:1px solid #4a554b;border-radius:8px;background:#141a15;color:#f4f1e8;font:inherit;font-size:0.75rem;cursor:pointer}
         .guest-filter:focus{outline:none;box-shadow:0 0 0 3px var(--focus-ring);border-color:color-mix(in srgb,var(--restaurant-primary,#d7b46a) 97%,black)}
         .guest-count{margin-left:auto;font-size:0.6875rem;color:#9ba198;white-space:nowrap}
+        .guest-save-state{font-size:0.6875rem;white-space:nowrap}
+        .guest-save-state[data-status="saving"]{color:#9ba198}
+        .guest-save-state[data-status="saved"]{color:#9dd3a8}
+        .guest-save-state[data-status="error"]{color:#ffb7aa}
         .guest-notice,.guest-error{margin:10px 0 0;font-size:0.6875rem;line-height:1.5}
         .guest-notice{color:#9dd3a8}.guest-error{color:#ffb7aa}
         /* Table */
