@@ -12,12 +12,12 @@ import {
 import { eq } from 'drizzle-orm'
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v16-appRouter'
 import { MuiThemeProvider } from '@/components/theme-provider'
+import { BrandingProvider } from '@/components/shared/branding-context'
 import {
-  BrandingProvider,
   DEFAULT_BRANDING,
   resolveBrandFontCss,
   type RestaurantBrandingData,
-} from '@/components/shared/branding-context'
+} from '@/lib/branding/brand-tokens'
 import { db } from '@/lib/db'
 import { restaurantBranding } from '@/lib/schema'
 import './globals.css'
