@@ -179,9 +179,14 @@ export default function HomePage({ managerAccess = false, branding = null, manag
       try {
         setServiceError('')
         await sendServiceMutation({ method: 'PATCH', body: { action: 'unit-status', unitId: id, status: patch.status } })
-        await refreshServiceData()
+        // Server confirmed — apply the status locally; the background
+        // revalidate reconciles the rest. Awaiting the full GET here used to
+        // add 1.4–4s to every save.
+        setUnits((prev) => prev.map((unit) => unit.id === id ? { ...unit, status: patch.status } as Unit : unit))
+        void refreshServiceData()
       } catch (caught) {
         setServiceError(caught instanceof Error ? caught.message : 'Unable to update the floor unit.')
+        void refreshServiceData()
       }
       return
     }
@@ -198,7 +203,7 @@ export default function HomePage({ managerAccess = false, branding = null, manag
     setServiceError('')
     setBookingBusy(true)
     try {
-      await sendServiceMutation({
+      const result = await sendServiceMutation({
         method: 'POST',
         body: {
           name: guestName.trim(),
@@ -213,8 +218,25 @@ export default function HomePage({ managerAccess = false, branding = null, manag
           serviceDate,
           clientRequestId: crypto.randomUUID(),
         },
-      })
-      await refreshServiceData()
+      }) as { reservation?: Booking } | null
+      // Server confirmed the save — reflect it locally right away and let the
+      // background revalidate reconcile (an awaited full GET used to add
+      // 1.4–4s). Prep-claim mirrors the route: only live-date bookings claim
+      // an available unit.
+      const created = result?.reservation
+      if (created) {
+        setBookings((prev) => [...prev, created].sort((a, z) => a.time.localeCompare(z.time)))
+        if (!/·\s*assign$/i.test(created.unit) && serviceDate === getServiceDate(now ?? new Date())) {
+          setUnits((prev) => prev.map((unit) => unit.id === created.unit && unit.status === 'available' ? {
+            ...unit,
+            status: 'prep',
+            guest: created.name,
+            pax: created.pax,
+            time: new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC' }).format(new Date(`2000-01-01T${bookTime}:00Z`)),
+          } as Unit : unit))
+        }
+      }
+      void refreshServiceData()
       setModal(null)
       setQuery('')
       setGuestName('')
@@ -234,7 +256,14 @@ export default function HomePage({ managerAccess = false, branding = null, manag
         method: 'PATCH',
         body: { action: 'complete', unitId: selected.id, billAmount: Number(bill) || 0, eventKey: crypto.randomUUID() },
       })
-      await refreshServiceData()
+      // Server confirmed — clear the table locally right away; the background
+      // revalidate reconciles bookings and metrics.
+      const closedUnit = selected.id
+      setUnits((prev) => prev.map((unit) => unit.id === closedUnit ? {
+        ...unit, status: 'available', guest: undefined, pax: undefined, time: undefined, note: '', bill: undefined,
+      } as Unit : unit))
+      setBookings((prev) => prev.map((booking) => booking.unit === closedUnit && booking.status === 'seated' ? { ...booking, status: 'completed' } : booking))
+      void refreshServiceData()
       setModal(null)
       setSelected(null)
       setBill('')
@@ -245,8 +274,11 @@ export default function HomePage({ managerAccess = false, branding = null, manag
   const setReservationArrival = async (reservationId: number, arrived: boolean) => {
     try {
       setServiceError('')
-      await sendServiceMutation({ method: 'PATCH', body: { action: arrived ? 'arrive' : 'unarrive', reservationId, eventKey: crypto.randomUUID() } })
-      await refreshServiceData()
+      const updated = (await sendServiceMutation({ method: 'PATCH', body: { action: arrived ? 'arrive' : 'unarrive', reservationId, eventKey: crypto.randomUUID() } }) as { reservation?: Booking } | null)?.reservation
+      // Server confirmed — merge the returned reservation locally; background
+      // revalidate reconciles the rest.
+      if (updated) setBookings((prev) => prev.map((booking) => booking.id === updated.id ? updated : booking))
+      void refreshServiceData()
     } catch (caught) {
       setServiceError(caught instanceof Error ? caught.message : 'Unable to update arrival status.')
     }
@@ -255,8 +287,16 @@ export default function HomePage({ managerAccess = false, branding = null, manag
   const seatReservation = async (reservationId: number) => {
     try {
       setServiceError('')
-      await sendServiceMutation({ method: 'PATCH', body: { action: 'seat', reservationId, eventKey: crypto.randomUUID() } })
-      await refreshServiceData()
+      const updated = (await sendServiceMutation({ method: 'PATCH', body: { action: 'seat', reservationId, eventKey: crypto.randomUUID() } }) as { reservation?: Booking } | null)?.reservation
+      // Server confirmed — merge the reservation and flip the table to seated
+      // locally; background revalidate reconciles the rest.
+      if (updated) {
+        setBookings((prev) => prev.map((booking) => booking.id === updated.id ? updated : booking))
+        setUnits((prev) => prev.map((unit) => unit.id === updated.unit ? {
+          ...unit, status: 'seated', guest: updated.name, pax: updated.pax, time: updated.time, note: updated.note,
+        } as Unit : unit))
+      }
+      void refreshServiceData()
     } catch (caught) {
       setServiceError(caught instanceof Error ? caught.message : 'Unable to seat this reservation.')
     }
@@ -275,11 +315,14 @@ export default function HomePage({ managerAccess = false, branding = null, manag
     setConsoleNotice('')
     try {
       if (!target.booking.arrived) {
-        await sendServiceMutation({ method: 'PATCH', body: { action: 'arrive', reservationId: target.booking.id, eventKey: crypto.randomUUID() } })
+        const arrived = (await sendServiceMutation({ method: 'PATCH', body: { action: 'arrive', reservationId: target.booking.id, eventKey: crypto.randomUUID() } }) as { reservation?: Booking } | null)?.reservation
+        if (arrived) setBookings((prev) => prev.map((booking) => booking.id === arrived.id ? arrived : booking))
       }
       await seatReservation(target.booking.id)
     } catch (caught) {
       setServiceError(caught instanceof Error ? caught.message : 'Unable to seat the next arrival.')
+      // The arrive step may have already applied locally — restore truth.
+      void refreshServiceData()
     }
   }
   const openBookingWizard = (options: { walkIn?: boolean; unitId?: string | null } = {}) => {
