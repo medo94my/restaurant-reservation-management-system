@@ -35,16 +35,14 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${dmSans.variable} ${playfair.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* Icon font is self-hosted (public/fonts, see globals.css) — preloaded
+            so the first paint already has it and no icon text ever flashes. */}
         <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
+          rel="preload"
+          href="/fonts/material-symbols-outlined.woff2"
+          as="font"
+          type="font/woff2"
           crossOrigin="anonymous"
-        />
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
-          rel="stylesheet"
         />
       </head>
       <body>
